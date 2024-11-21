@@ -26,18 +26,17 @@
                         <label for="inputName" class="form-label">Nama</label>
                         <input type="text" name="nama" id="nama" class="form-control" id="inputName">
                     </div>
+                    
                     <script>
-document.getElementById('nama').addEventListener('input', function (event) {
-    var input = event.target;
-    var value = input.value;
-    
-    // Hapus karakter yang bukan huruf, angka, atau spasi
-    input.value = value.replace(/[^A-Za-z\s]/g, '');
+                    document.getElementById('nama').addEventListener('input', function (event) {
+                        var input = event.target;
+                        var value = input.value;
+                        
+                        // Hapus karakter yang bukan huruf, angka, atau spasi
+                        input.value = value.replace(/[^A-Za-z\s]/g, '');
+                    });
+                    </script>
 
-    // Jika perlu, tambahkan logika untuk menampilkan pesan error
-    // document.getElementById('err_alamat').textContent = 'Hanya huruf, angka, dan spasi yang diperbolehkan';
-});
-</script>
                     <div class="mb-3">
                         <label for="inputEmail" class="form-label">Email</label>
                         <input type="email" name="email" class="form-control" id="inputEmail">
@@ -69,28 +68,26 @@ $(document).ready(function() {
         allowClear: true
     });
 
-    // Dynamically add/remove Posisi and Wilayah fields
-    $('#addPosisiButton').click(function() {
-        addPosisiField();
-    });
-
+    // Fungsi untuk menambahkan form posisi-group
     function addPosisiField() {
-        var count = $('.posisi-group').length + 1; // Count the number of existing Posisi groups
+        var count = $('.posisi-group').length + 1; // Hitung jumlah Posisi group yang ada
         var html = `
             <div class="posisi-group mb-3" id="posisiGroup${count}">
                 <label for="selectPosisi${count}" class="form-label">Posisi</label>
-                <select name="posisi[${count}][posisi_id]" id="selectPosisi${count}" class="form-select select2" style="color:black;">
-                    @foreach ($posisi as $item)
-                        <option value="{{ $item->id }}">{{ $item->nama_posisi }}</option>
-                    @endforeach
-                </select>
+               <select name="posisi[${count}][posisi_id]" id="selectPosisi${count}" class="form-select select2" style="color:black;">
+    <option value="" selected disabled>Pilih Posisi</option>
+    @foreach ($posisi as $item)
+        <option value="{{ $item->id }}">{{ $item->nama_posisi }}</option>
+    @endforeach
+</select>
 
-                <label for="selectWilayah${count}" class="form-label mt-2">Wilayah</label>
-                <select name="posisi[${count}][wilayah][]" id="selectWilayah${count}" class="form-select select2" multiple="multiple" style="color:black; width:100%;">
-                    @foreach ($wilayah as $item)
-                        <option value="{{ $item->id }}">{{ $item->nama_wilayah }}</option>
-                    @endforeach
-                </select>
+<label for="selectWilayah${count}" class="form-label mt-2">Wilayah</label>
+<select name="posisi[${count}][wilayah][]" id="selectWilayah${count}" class="form-select select2" multiple="multiple" style="color:black; width:100%;">
+    <option value="all">Semua Wilayah</option>
+    @foreach ($wilayah as $item)
+        <option value="{{ $item->id }}">{{ $item->nama_wilayah }}</option>
+    @endforeach
+</select>
 
                 <button type="button" class="btn btn-danger btn-sm mt-2 removePosisiButton">Hapus Posisi</button>
             </div>
@@ -107,32 +104,60 @@ $(document).ready(function() {
         });
 
         $('#selectWilayah' + count).select2({
-            placeholder: "Pilih Wilayah",
-            allowClear: true
-        });
+    placeholder: "Pilih Wilayah",
+    allowClear: true
+});
+
+// Logika untuk "Semua Wilayah"
+$('#selectWilayah' + count).on('select2:select', function (e) {
+    const selectedValue = e.params.data.id;
+
+    if (selectedValue === 'all') {
+        // Jika "Semua Wilayah" dipilih, pilih semua opsi lainnya
+        const allOptions = $(this).find('option').map(function () {
+            return $(this).val();
+        }).get().filter(value => value !== 'all'); // Kecuali "Semua Wilayah"
+        
+        $(this).val(allOptions).trigger('change');
+    }
+});
+
+$('#selectWilayah' + count).on('select2:unselect', function (e) {
+    const unselectedValue = e.params.data.id;
+
+    if (unselectedValue === 'all') {
+        // Jika "Semua Wilayah" di-unselect, hapus semua pilihan
+        $(this).val(null).trigger('change');
+    }
+});
     }
 
-    // Remove Posisi field group
+    // Event change untuk menampilkan otomatis form posisi-group saat memilih role tertentu
+    $('#selectRole').change(function() {
+        if ($(this).val() == 2 || $(this).val() == 3) { // Role ID 2 atau 3 adalah "Trainer" atau "Rekrutmen"
+            $('#addPosisiButton').show(); // Tampilkan tombol Tambah Posisi
+            $('#dynamicPosisiContainer').empty(); // Kosongkan container sebelum menambahkan baru
+            addPosisiField(); // Tambahkan form posisi-group pertama
+        } else {
+            $('#addPosisiButton').hide();
+            $('#dynamicPosisiContainer').empty(); // Kosongkan semua form jika bukan Trainer atau Rekrutmen
+        }
+    });
+
+    // Event click untuk menambahkan form posisi-group baru saat tombol "Tambah Posisi" diklik
+    $('#addPosisiButton').click(function() {
+        addPosisiField();
+    });
+
+    // Hapus form posisi-group tertentu
     $(document).on('click', '.removePosisiButton', function() {
         $(this).closest('.posisi-group').remove();
     });
 
-    // Show/hide Posisi and Wilayah fields based on role selection
-    $('#selectRole').change(function() {
-        if ($(this).val() == 2) { // Role ID 2 is "Rekrutmen"
-            $('#addPosisiButton').show();
-        }
-        else if ($(this).val() == 3) { // Role ID 2 is "Rekrutmen"
-            $('#addPosisiButton').show();
-        } else {
-            $('#addPosisiButton').hide();
-            $('#dynamicPosisiContainer').empty(); // Clear all dynamic fields if role is not Rekrutmen
-        }
-    });
-
-    // Initially hide Add Posisi button
+    // Sembunyikan tombol Tambah Posisi secara default
     $('#addPosisiButton').hide();
 });
+
 
 function validateForm() {
     let role = document.forms["saveform"]["role_id"].value.trim();
@@ -152,13 +177,11 @@ function validateForm() {
         return false;
     }
 
-    if (role == 2 || role == 3) { // Role ID 2 adalah "Rekrutmen"
-
+    if (role == 2 || role == 3) {
         if ($('.posisi-group').length === 0) {
             alert("Minimal satu posisi harus diisi.");
             return false;
         }
-        
 
         let allValid = true;
         let posisiSelected = new Set();
@@ -167,28 +190,24 @@ function validateForm() {
             let posisiSelect = $(this).find('select[name^="posisi"][name$="][posisi_id]"]');
             let wilayahSelect = $(this).find('select[name^="posisi"][name$="][wilayah][]"]');
             
-            // Check if Posisi is selected
-            let posisiValue = posisiSelect.val();
-            if (!posisiValue) {
+            if (!posisiSelect.val()) {
                 alert("Posisi harus diisi.");
                 allValid = false;
-                return false; // Exit loop
+                return false;
             }
             
-            // Check if Wilayah is selected if Posisi is selected
             if (wilayahSelect.val().length === 0) {
                 alert("Wilayah harus diisi.");
                 allValid = false;
-                return false; // Exit loop
+                return false;
             }
             
-            // Check for duplicate Posisi
-            if (posisiSelected.has(posisiValue)) {
+            if (posisiSelected.has(posisiSelect.val())) {
                 alert("Posisi yang sama tidak boleh dipilih lebih dari sekali.");
                 allValid = false;
-                return false; // Exit loop
+                return false;
             }
-            posisiSelected.add(posisiValue);
+            posisiSelected.add(posisiSelect.val());
         });
 
         if (!allValid) {
@@ -198,7 +217,6 @@ function validateForm() {
 
     return true;
 }
-
 </script>
 
 @endsection

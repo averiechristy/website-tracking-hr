@@ -7,9 +7,11 @@ use App\Models\Kandidat;
 use App\Models\LogTahapan;
 use App\Models\Posisi;
 use App\Models\Wilayah;
+use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Log;
+use Validator;
 
 class ProsesRekrutmenController extends Controller
 {
@@ -29,52 +31,50 @@ class ProsesRekrutmenController extends Controller
 
     public function jadwalstore(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
+      
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
 
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Belum Diproses Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
-           
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.belumproses.index'));
-            }
-
-
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
             LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Belum Proses',
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Belum Proses',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
             ]);
-
-            }
         }
-        
+    
         $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
-
         return redirect(route('superadmin.belumproses.index'));
     }
 
@@ -104,13 +104,26 @@ class ProsesRekrutmenController extends Controller
         
         if ($item) {
 
+            if($roleid === 3) {
+
+          
+                if($request->status === 'Tidak Hadir'){
+                    $item->hasil_status = 'Tidak Hadir Belum Rescheduled';
+                    $item->save();
+        }else {
             $item->hasil_status = $request->status;
             $item->save();
+        }
 
             $status = $request->status;
 
             if($status === 'Lolos'){
                 $kandidat->status_hire = $statustahapan;
+                $kandidat->save();
+            }
+
+            if($status === 'Selesai Proses'){
+                $kandidat->status_hire = 'PKM Selesai';
                 $kandidat->save();
             }
 
@@ -120,7 +133,7 @@ class ProsesRekrutmenController extends Controller
                     $item->save();
                 }
             }
-            
+        
 
             if($status === 'Tidak Lolos'){
                 $kandidat->status_hire = $status;
@@ -138,6 +151,50 @@ class ProsesRekrutmenController extends Controller
             }
     
             return response()->json(['success' => true, 'message' => 'Status berhasil diubah.']);
+
+        }
+            else {
+                
+            $item->hasil_status = $request->status;
+            $item->save();
+
+            $status = $request->status;
+
+            if($status === 'Lolos'){
+                $kandidat->status_hire = $statustahapan;
+                $kandidat->save();
+            }
+
+            if($status === 'Selesai Proses'){
+                $kandidat->status_hire = 'PKM Selesai';
+                $kandidat->save();
+            }
+
+            if($roleid !== 1 && $roleid !== 2) {
+                if($status === 'Tidak Hadir') {
+                    $item->flag_kehadiran = 'Tidak Hadir';
+                    $item->save();
+                }
+            }
+        
+
+            if($status === 'Tidak Lolos'){
+                $kandidat->status_hire = $status;
+                $kandidat -> save();
+            }
+
+            if($status === 'Simpan Kandidat') {
+                $kandidat->status_hire = $status;
+                $kandidat->save();
+            }
+
+            if($status === 'Stop Proses') {
+                $kandidat->status_hire = $status;
+                $kandidat->save();
+            }
+    
+            return response()->json(['success' => true, 'message' => 'Status berhasil diubah.']);
+            }
         }
     
         return response()->json(['success' => false, 'message' => 'Kandidat tidak ditemukan.']);
@@ -561,11 +618,20 @@ class ProsesRekrutmenController extends Controller
     
             // Initialize the query for LogTahapan
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Psikotes')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Psikotes')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Psikotes Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Psikotes Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             // Filtering by position and region based on assigned positions and regions
             $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
@@ -613,11 +679,20 @@ class ProsesRekrutmenController extends Controller
             $posisi = Posisi::all()->sortBy('nama_posisi');
             $wilayah = Wilayah::all()->sortBy('nama_wilayah');
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Psikotes')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Psikotes')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                   ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Psikotes Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Psikotes Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             if ($request->has('filter_posisi') && $request->filter_posisi != '') {
                 $query->where('posisi_id', $request->filter_posisi);
@@ -705,52 +780,49 @@ class ProsesRekrutmenController extends Controller
 
     public function jadwalstorepsikotes(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
-
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Psikotes Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
-           
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.belumproses.index'));
-            }
-
-
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
+            
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
             LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Psikotes',
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Psikotes',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
             ]);
-
-            }
         }
-        
+    
         $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
-
         return redirect(route('superadmin.psikotes.index'));
     }
 
@@ -905,52 +977,50 @@ class ProsesRekrutmenController extends Controller
  
      public function jadwalstoreitvhr(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
-
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Interview HR Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
-           
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.belumproses.index'));
-            }
-
-
+     
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
+            
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
             LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Interview HR',
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Interview HR',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
             ]);
-
-            }
         }
-        
+    
         $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
-
         return redirect(route('superadmin.itvhr.index'));
     }
 
@@ -1129,11 +1199,20 @@ class ProsesRekrutmenController extends Controller
     
             // Initialize the query for LogTahapan
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview HR')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Interview HR')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Psikotes Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Interview HR Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             // Filtering by position and region based on assigned positions and regions
             $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
@@ -1180,12 +1259,22 @@ class ProsesRekrutmenController extends Controller
         } else {
             $posisi = Posisi::all()->sortBy('nama_posisi');
             $wilayah = Wilayah::all()->sortBy('nama_wilayah');
+            
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview HR')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Interview HR')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Interview HR Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Interview HR Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             if ($request->has('filter_posisi') && $request->filter_posisi != '') {
                 $query->where('posisi_id', $request->filter_posisi);
@@ -1316,52 +1405,50 @@ class ProsesRekrutmenController extends Controller
 
      public function jadwalstoreitvuser(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
-
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Interview User Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
-           
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.belumproses.index'));
-            }
-
-
-            LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Interview User',
-            ]);
-
-            }
-        }
         
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
+            
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
+            LogTahapan::create([
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Interview User',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
+            ]);
+        }
+    
         $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
-
         return redirect(route('superadmin.itvuser.index'));
     }
 
@@ -1392,11 +1479,20 @@ class ProsesRekrutmenController extends Controller
     
             // Initialize the query for LogTahapan
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview User')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Interview User')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Interview User Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Interview User Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             // Filtering by position and region based on assigned positions and regions
             $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
@@ -1443,12 +1539,22 @@ class ProsesRekrutmenController extends Controller
         } else {
             $posisi = Posisi::all()->sortBy('nama_posisi');
             $wilayah = Wilayah::all()->sortBy('nama_wilayah');
-            $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview User')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
-                    $query->where('status_hire', 'Interview User Sudah Dijadwalkan');
-                });
+
+          $query = LogTahapan::query()
+    ->where('status_tahapan', 'Interview User')
+    ->where(function ($query) {
+        // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+        $query->where('hasil_status', 'Dijadwalkan')
+            ;
+    })
+    ->where(function ($query) {
+        // Kondisi untuk status_hire yang harus Interview User Sudah Dijadwalkan
+        $query->whereHas('kandidat', function ($query) {
+            $query->where('status_hire', 'Interview User Sudah Dijadwalkan');
+        });
+    })
+    ->whereNot('hasil_status', 'Simpan Kandidat');
+
     
             if ($request->has('filter_posisi') && $request->filter_posisi != '') {
                 $query->where('posisi_id', $request->filter_posisi);
@@ -1639,52 +1745,50 @@ class ProsesRekrutmenController extends Controller
 
      public function jadwalstoreitvuserdua(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
-
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Interview User 2 Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
+      
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
            
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.belumproses.index'));
-            }
-
-
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
             LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Interview User 2',
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Interview User 2',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
             ]);
-
-            }
         }
-        
+    
         $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
-
         return redirect(route('superadmin.itvuserdua.index'));
     }
 
@@ -1716,11 +1820,20 @@ class ProsesRekrutmenController extends Controller
     
             // Initialize the query for LogTahapan
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview User 2')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Interview User 2')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Interview User 2 Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Interview User 2 Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             // Filtering by position and region based on assigned positions and regions
             $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
@@ -1768,11 +1881,20 @@ class ProsesRekrutmenController extends Controller
             $posisi = Posisi::all()->sortBy('nama_posisi');
             $wilayah = Wilayah::all()->sortBy('nama_wilayah');
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview User 2')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Interview User 2')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Interview User 2 Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Interview User 2 Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             if ($request->has('filter_posisi') && $request->filter_posisi != '') {
                 $query->where('posisi_id', $request->filter_posisi);
@@ -1960,52 +2082,50 @@ class ProsesRekrutmenController extends Controller
 
      public function jadwalstoreitvusertiga(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
-
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Interview User 3 Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
-           
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.belumproses.index'));
-            }
-
-
-            LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Interview User 3',
-            ]);
-
-            }
-        }
         
-        $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
 
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
+            LogTahapan::create([
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Interview User 3',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
+            ]);
+        }
+    
+        $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
         return redirect(route('superadmin.itvusertiga.index'));
     }
 
@@ -2036,11 +2156,20 @@ class ProsesRekrutmenController extends Controller
     
             // Initialize the query for LogTahapan
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview User 3')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Interview User 3')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Interview User 3 Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Interview User 3 Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             // Filtering by position and region based on assigned positions and regions
             $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
@@ -2088,11 +2217,20 @@ class ProsesRekrutmenController extends Controller
             $posisi = Posisi::all()->sortBy('nama_posisi');
             $wilayah = Wilayah::all()->sortBy('nama_wilayah');
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Interview User 3')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Interview User 3')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Interview User 3 Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Interview User 3 Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             if ($request->has('filter_posisi') && $request->filter_posisi != '') {
                 $query->where('posisi_id', $request->filter_posisi);
@@ -2185,52 +2323,50 @@ class ProsesRekrutmenController extends Controller
 
     public function jadwalstoretraining(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
-
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Training Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
+      
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
            
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.belumproses.index'));
-            }
-
-
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
             LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Training',
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Training',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
             ]);
-
-            }
         }
-        
+    
         $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
-
         return redirect(route('superadmin.training.index'));
     }
 
@@ -2263,11 +2399,20 @@ class ProsesRekrutmenController extends Controller
     
             // Initialize the query for LogTahapan
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Training')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Training')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ->orWhere('hasil_status', 'Tidak Hadir Belum Rescheduled');
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Training Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Training Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             // Filtering by position and region based on assigned positions and regions
             $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
@@ -2315,11 +2460,20 @@ class ProsesRekrutmenController extends Controller
             $posisi = Posisi::all()->sortBy('nama_posisi');
             $wilayah = Wilayah::all()->sortBy('nama_wilayah');
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Training')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Training')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                ->orWhere('hasil_status', 'Tidak Hadir Belum Rescheduled'); ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Training Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Training Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             if ($request->has('filter_posisi') && $request->filter_posisi != '') {
                 $query->where('posisi_id', $request->filter_posisi);
@@ -2342,6 +2496,48 @@ class ProsesRekrutmenController extends Controller
         }
     }
 
+    public function createJadwalTandem(Request $request)
+    {
+
+        $item = LogTahapan::find($request->id);
+        $tanggalbaru = Carbon::parse($request->input('tanggal'));
+        $tanggalBulan = $tanggalbaru->month;
+        $tanggalTahun = $tanggalbaru->year;
+
+        $tgltraining = Carbon::parse($item->tanggal);
+        $tanggalnew = Carbon::parse($request->input('tanggal'));
+    
+        if ($tanggalnew->equalTo($tgltraining)) {
+            return response()->json(['success' => false, 'message' => 'Tanggal tandem tidak boleh sama dengan tanggal training.']);
+        }
+    
+        $kandidatId = $item->kandidat_id;
+        $datakandidat = Kandidat::find($kandidatId);
+        $posisiid = $datakandidat->posisi_id;
+        $wilayahid = $datakandidat->wilayah_id;
+
+        $item -> hasil_status = "Lolos";
+        $item -> save();
+
+        $datakandidat->status_hire = "Tandem Sudah Dijadwalkan";
+        $datakandidat -> save();
+
+        LogTahapan::create([
+            'kandidat_id' => $kandidatId,
+            'status_tahapan' => "Tandem",
+            'tanggal' => $tanggalbaru,
+            'bulan' => $tanggalBulan,
+            'tahun' => $tanggalTahun,
+            'posisi_id' => $posisiid,
+            'wilayah_id' => $wilayahid,
+            'hasil_status' => 'Dijadwalkan',
+            'flag_tahapan' => 'Tandem',
+        ]);
+
+    
+    return response()->json(['success' => true, 'message' => 'Jadwal tandem berhasil dibuat.']);
+
+    }
 
     public function createLogTahapantraining(Request $request)
     {
@@ -2479,6 +2675,7 @@ class ProsesRekrutmenController extends Controller
     
         $kandidat = Kandidat::find($kandidatId);
         if ($kandidat) {
+
             LogTahapan::create([
                 'kandidat_id' => $kandidat->id,
                 'status_tahapan' => $statuslama,
@@ -2489,7 +2686,6 @@ class ProsesRekrutmenController extends Controller
                 'wilayah_id' => $kandidat->wilayah_id,
                 'hasil_status' => 'Dijadwalkan',
                 'flag_tahapan' => 'Simpan Kandidat',
-                
             ]);
     
             return response()->json(['success' => true, 'message' => 'Penjadwalan ulang berhasil dibuat.']);
@@ -2688,52 +2884,50 @@ class ProsesRekrutmenController extends Controller
 
     public function jadwalstoretandem(Request $request){
         
-        foreach ($request->status as $kandidatId => $statusTahapan) {
-
-           $datakandidat = Kandidat::find($kandidatId);
-           $posisiid = $datakandidat->posisi_id;
-           $wilayahid = $datakandidat->wilayah_id;
-
-           $datakandidat->status_hire = "Tandem Sudah Dijadwalkan";
-           $datakandidat->save();
-
-           $namakandidat = $datakandidat->nama_kandidat;
-           
-            if (isset($request->date[$kandidatId])) {
-            $tanggal = $request->date[$kandidatId];
- 
-            $tanggalHari = date('d', strtotime($tanggal));
-            $tanggalBulan = date('m', strtotime($tanggal));
-            $tanggalTahun = date('Y', strtotime($tanggal));
-
-            $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-            ->where('hasil_status', 'Dijadwalkan')
-            ->first();
-           
-
-            if($existinglogtahapan) {
-                $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-                return redirect(route('superadmin.tandem.index'));
-            }
-
-
-            LogTahapan::create([
-                    'kandidat_id' => $kandidatId,
-                    'status_tahapan' => $statusTahapan,
-                    'tanggal' => $request->date[$kandidatId],
-                    'bulan' => $tanggalBulan,
-                    'tahun' => $tanggalTahun,
-                    'posisi_id' => $posisiid,
-                    'wilayah_id' => $wilayahid,
-                    'hasil_status' => 'Dijadwalkan',
-                    'flag_tahapan' => 'Tandem',
-            ]);
-
-            }
-        }
         
+        $request->validate([
+            'status' => 'required',
+            'date' => 'required|date',
+        ]);
+    
+        // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+        $statusTahapan = $request->status;
+        $tanggal = $request->date;
+        $tanggalHari = date('d', strtotime($tanggal));
+        $tanggalBulan = date('m', strtotime($tanggal));
+        $tanggalTahun = date('Y', strtotime($tanggal));
+    
+        // Proses setiap kandidat menggunakan ID yang dikirim
+        foreach ($request->candidates as $kandidatId) {
+            $datakandidat = Kandidat::find($kandidatId);
+            $posisiid = $datakandidat->posisi_id;
+            $wilayahid = $datakandidat->wilayah_id;
+            $namakandidat = $datakandidat->nama_kandidat;
+    
+            // Cek apakah sudah ada jadwal untuk kandidat ini
+           
+    
+            // Update status hire kandidat
+            $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+            $datakandidat->save();
+    
+            // Simpan log tahapan baru
+            LogTahapan::create([
+                'kandidat_id' => $kandidatId,
+                'status_tahapan' => $statusTahapan,
+                'tanggal' => $tanggal,
+                'bulan' => $tanggalBulan,
+                'tahun' => $tanggalTahun,
+                'posisi_id' => $posisiid,
+                'wilayah_id' => $wilayahid,
+                'hasil_status' => 'Dijadwalkan',
+                'flag_tahapan' => 'Tandem',
+                'requester' => Auth::user()->nama,
+                'waktu' => now(),
+            ]);
+        }
+    
         $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
-
         return redirect(route('superadmin.tandem.index'));
     }
 
@@ -2765,11 +2959,20 @@ class ProsesRekrutmenController extends Controller
     
             // Initialize the query for LogTahapan
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Tandem')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Tandem')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Tandem Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Tandem Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             // Filtering by position and region based on assigned positions and regions
             $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
@@ -2817,11 +3020,20 @@ class ProsesRekrutmenController extends Controller
             $posisi = Posisi::all()->sortBy('nama_posisi');
             $wilayah = Wilayah::all()->sortBy('nama_wilayah');
             $query = LogTahapan::query()
-            ->where('flag_tahapan', 'Tandem')
-            ->whereNot('hasil_status','Simpan Kandidat')
-                ->whereHas('kandidat', function ($query) {
+            ->where('status_tahapan', 'Tandem')
+            ->where(function ($query) {
+                // Kondisi untuk hasil status Dijadwalkan dan Tidak Hadir
+                $query->where('hasil_status', 'Dijadwalkan')
+                    ;
+            })
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Tandem Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
                     $query->where('status_hire', 'Tandem Sudah Dijadwalkan');
                 });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
     
             if ($request->has('filter_posisi') && $request->filter_posisi != '') {
                 $query->where('posisi_id', $request->filter_posisi);
@@ -3405,7 +3617,7 @@ class ProsesRekrutmenController extends Controller
                 $wilayah = collect(); // Empty collection
             }
 
-            $kandidat = $query->orderBy('created_at', 'desc')->where('status_hire','Join')->get();
+            $kandidat = $query->orderBy('created_at', 'desc')->where('status_hire','Proses PKM')->get();
             $posisi = Posisi::whereIn('id', $assignedPosisiIds)->get();
             return view('superadmin.lolos.index',[
                 'kandidat' => $kandidat,
@@ -3429,7 +3641,7 @@ class ProsesRekrutmenController extends Controller
                 $query->where('wilayah_id', $request->filter_wilayah);
             }
     
-            $kandidat = $query->orderBy('created_at', 'desc')->where('status_hire','Join')->get();
+            $kandidat = $query->orderBy('created_at', 'desc')->where('status_hire','Proses PKM')->get();
             return view('superadmin.lolos.index',[
                 'kandidat' => $kandidat,
                 'posisi' => $posisi,
@@ -3443,6 +3655,122 @@ class ProsesRekrutmenController extends Controller
      }
 
 
+
+
+     public function lolosafterindex(Request $request) {
+        $roleid = auth()->user()->role_id;
+    
+        if ($roleid == 2) {
+            $userId = auth()->id();
+            $detailPosisi = DetailPosisi::where('user_id', $userId)->get();
+    
+            $assignedPosisi = $detailPosisi->pluck('posisi_id')->unique();
+            $assignedWilayah = $detailPosisi->pluck('wilayah_id')->unique();
+    
+            $assignedPosisiIds = [];
+            $assignedWilayahIds = [];
+    
+            foreach ($assignedPosisi as $posisi) {
+                $assignedPosisiIds = array_merge($assignedPosisiIds, explode(',', $posisi));
+            }
+    
+            foreach ($assignedWilayah as $wilayah) {
+                $assignedWilayahIds = array_merge($assignedWilayahIds, explode(',', $wilayah));
+            }
+    
+            $assignedPosisiIds = array_unique($assignedPosisiIds);
+            $assignedWilayahIds = array_unique($assignedWilayahIds);
+    
+            // Initialize the query for LogTahapan
+            $query = LogTahapan::query()
+            ->where('status_tahapan', 'Proses PKM')
+
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Psikotes Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
+                    $query->where('status_hire', 'Proses PKM Sudah Dijadwalkan');
+                });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
+    
+            // Filtering by position and region based on assigned positions and regions
+            $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
+                foreach ($assignedPosisiIds as $posisiId) {
+                    foreach ($assignedWilayahIds as $wilayahId) {
+                        $query->orWhere(function ($query) use ($posisiId, $wilayahId) {
+                            $query->where('posisi_id', $posisiId)
+                                  ->where('wilayah_id', $wilayahId);
+                        });
+                    }
+                }
+            });
+    
+            // Filtering by user input
+            if ($request->has('filter_posisi') && $request->filter_posisi != '') {
+                $selectedPosisiId = $request->filter_posisi;
+                $query->where('posisi_id', $selectedPosisiId);
+    
+                // Get assigned wilayah for the selected posisi
+                $assignedWilayahIdsForPosisi = $detailPosisi->where('posisi_id', $selectedPosisiId)->pluck('wilayah_id')->toArray();
+                $wilayah = Wilayah::whereIn('id', explode(',', implode(',', $assignedWilayahIdsForPosisi)))->get();
+    
+                // Apply wilayah filter if specified
+                if ($request->has('filter_wilayah') && $request->filter_wilayah != '') {
+                    $query->where('wilayah_id', $request->filter_wilayah);
+                }
+            } else {
+                // If no posisi is selected, no wilayah should be shown
+                $wilayah = collect(); // Empty collection
+            }
+    
+            // Get all log tahapan that match the criteria
+            $logTahapan = $query->orderBy('created_at', 'desc')->get();
+            $posisi = Posisi::whereIn('id', $assignedPosisiIds)->get();
+    
+            return view('superadmin.lolos.dijadwalkan', [
+                'logTahapan' => $logTahapan, // Changed to logTahapan
+                'posisi' => $posisi,
+                'wilayah' => $wilayah,
+                'selectedPosisi' => $request->filter_posisi,
+                'selectedWilayah' => $request->filter_wilayah,
+            ]);
+    
+        } else {
+            $posisi = Posisi::all()->sortBy('nama_posisi');
+            $wilayah = Wilayah::all()->sortBy('nama_wilayah');
+            
+            $query = LogTahapan::query()
+            ->where('status_tahapan', 'Proses PKM')
+            ->where(function ($query) {
+                // Kondisi untuk status_hire yang harus Proses PKM Sudah Dijadwalkan
+                $query->whereHas('kandidat', function ($query) {
+                    $query->where('status_hire', 'Proses PKM Sudah Dijadwalkan');
+                });
+            })
+            ->whereNot('hasil_status', 'Simpan Kandidat');
+        
+    
+            if ($request->has('filter_posisi') && $request->filter_posisi != '') {
+                $query->where('posisi_id', $request->filter_posisi);
+            }
+    
+            if ($request->has('filter_wilayah') && $request->filter_wilayah != '') {
+                $query->where('wilayah_id', $request->filter_wilayah);
+            }
+    
+            $logTahapan = $query->orderBy('created_at', 'desc')->get();
+
+            
+            return view('superadmin.lolos.dijadwalkan', [
+                'logTahapan' => $logTahapan, // Changed to logTahapan
+                'posisi' => $posisi,
+                'wilayah' => $wilayah,
+                'selectedPosisi' => $request->filter_posisi,
+                'selectedWilayah' => $request->filter_wilayah,
+            ]);
+        }
+    }
      public function tidaklolosindex(Request $request){
 
         $roleid = auth()->user()->role_id;
@@ -3745,6 +4073,14 @@ class ProsesRekrutmenController extends Controller
 {
     $logTahapan = LogTahapan::find($request->id);
     if ($logTahapan) {
+        $status = $request->status;
+
+        $kandidatid = $logTahapan->kandidat_id;
+        $datakandidat = Kandidat::find($kandidatid);
+
+        $datakandidat->status_hire = "$status Sudah Dijadwalkan";
+        $datakandidat->save();
+
         $logTahapan->status_tahapan = $request->status;
         $logTahapan->tanggal = $request->tanggal;
         $logTahapan->save();
@@ -3859,69 +4195,232 @@ public function jadwalindexsave(Request $request)
 
 }
 
+public function jadwalindextidaklolos(Request $request)
+{
+    $ids = explode(',', $request->query('ids'));
+    $candidates = Kandidat::whereIn('id', $ids)->get();
 
+    $roleid = auth()->user()->role_id;
+        
+    if($roleid == 2){
+
+        $userId = auth()->id();
+        $detailPosisi = DetailPosisi::where('user_id', $userId)->get();
+    
+        $assignedPosisi = $detailPosisi->pluck('posisi_id')->unique();
+        $assignedWilayah = $detailPosisi->pluck('wilayah_id')->unique();
+        
+        $assignedPosisiIds = [];
+        $assignedWilayahIds = [];
+        
+        foreach ($assignedPosisi as $posisi) {
+            $assignedPosisiIds = array_merge($assignedPosisiIds, explode(',', $posisi));
+        }
+        
+        foreach ($assignedWilayah as $wilayah) {
+            $assignedWilayahIds = array_merge($assignedWilayahIds, explode(',', $wilayah));
+        }
+        
+        $assignedPosisiIds = array_unique($assignedPosisiIds);
+        $assignedWilayahIds = array_unique($assignedWilayahIds);
+        
+        // Initialize the query for Kandidat
+        $query = Kandidat::query();
+    
+        // Filtering by position and region based on assigned positions and regions
+        $query->where(function ($query) use ($assignedPosisiIds, $assignedWilayahIds) {
+            foreach ($assignedPosisiIds as $posisiId) {
+                foreach ($assignedWilayahIds as $wilayahId) {
+                    $query->orWhere(function ($query) use ($posisiId, $wilayahId) {
+                        $query->where('posisi_id', $posisiId)
+                              ->where('wilayah_id', $wilayahId);
+                    });
+                }
+            }
+        });
+
+          // Filtering by user input
+        if ($request->has('filter_posisi') && $request->filter_posisi != '') {
+            $selectedPosisiId = $request->filter_posisi;
+            $query->where('posisi_id', $selectedPosisiId);
+    
+            // Get assigned wilayah for the selected posisi
+            $assignedWilayahIdsForPosisi = $detailPosisi->where('posisi_id', $selectedPosisiId)->pluck('wilayah_id')->toArray();
+            $wilayah = Wilayah::whereIn('id', explode(',', implode(',', $assignedWilayahIdsForPosisi)))->get();
+            
+            // Apply wilayah filter if specified
+            if ($request->has('filter_wilayah') && $request->filter_wilayah != '') {
+                $query->where('wilayah_id', $request->filter_wilayah);
+            }
+            
+        } else {
+            // If no posisi is selected, no wilayah should be shown
+            $wilayah = collect(); // Empty collection
+        }
+
+        $kandidat = $query->orderBy('created_at', 'desc')->where('status_hire','Simpan Kandidat')->get();
+        $posisi = Posisi::whereIn('id', $assignedPosisiIds)->get();
+        return view('superadmin.tidaklolos.penjadwalan',[
+            'kandidat' => $kandidat,
+            'posisi' => $posisi,
+            'wilayah' => $wilayah,
+            'selectedPosisi' => $request->filter_posisi,
+            'selectedWilayah' => $request->filter_wilayah,
+            'candidates' => $candidates
+       ]);
+
+
+    }else {
+
+        $posisi = Posisi::all()->sortBy('nama_posisi');
+        $wilayah = Wilayah::all()->sortBy('nama_wilayah');
+        $query = Kandidat::query();
+        if ($request->has('filter_posisi') && $request->filter_posisi != '') {
+            $query->where('posisi_id', $request->filter_posisi);
+        }
+
+        if ($request->has('filter_wilayah') && $request->filter_wilayah != '') {
+            $query->where('wilayah_id', $request->filter_wilayah);
+        }
+
+        $kandidat = $query->orderBy('created_at', 'desc')->where('status_hire','Simpan Kandidat')->get();
+        return view('superadmin.tidaklolos.penjadwalan',[
+            'kandidat' => $kandidat,
+            'posisi' => $posisi,
+            'wilayah' => $wilayah,
+            'selectedPosisi' => $request->filter_posisi,
+            'selectedWilayah' => $request->filter_wilayah,
+            'candidates' => $candidates
+          
+           ]);
+    }
+
+
+
+}
 
 public function jadwalstoresave(Request $request){
         
-   
-    foreach ($request->status as $kandidatId => $statusTahapan) {
+    $request->validate([
+        'status' => 'required',
+        'date' => 'required|date',
+    ]);
 
+    // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+    $statusTahapan = $request->status;
+    $tanggal = $request->date;
+    $posisiidnew = $request->posisi_id;
+    $wilayahidnew = $request->wilayah_id;
+
+    
+    $tanggalHari = date('d', strtotime($tanggal));
+    $tanggalBulan = date('m', strtotime($tanggal));
+    $tanggalTahun = date('Y', strtotime($tanggal));
+
+    // Proses setiap kandidat menggunakan ID yang dikirim
+    foreach ($request->candidates as $kandidatId) {
+        $datakandidat = Kandidat::find($kandidatId);
+        $posisiid = $datakandidat->posisi_id;
+        $wilayahid = $datakandidat->wilayah_id;
+        $namakandidat = $datakandidat->nama_kandidat;
+
+        $datakandidat = Kandidat::find($kandidatId);
+       
+       
+        $datakandidat->posisi_id = $posisiidnew;
+        $datakandidat->wilayah_id = $wilayahidnew;
+        $datakandidat->save();
+ 
+
+        // Cek apakah sudah ada jadwal untuk kandidat ini
         
 
-       $datakandidat = Kandidat::find($kandidatId);
-       $posisiid = $request->posisi[$kandidatId];
-       $wilayahid = $request->wilayah[$kandidatId];
+        // Update status hire kandidat
+        $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+        $datakandidat->save();
 
-      
-
-       $datakandidat->posisi_id = $posisiid;
-       $datakandidat->wilayah_id = $wilayahid;
-       $datakandidat->save();
-
-       $datakandidat->status_hire = "Simpan Kandidat Sudah Dijadwalkan";
-       $datakandidat->save();
-
-       $namakandidat = $datakandidat->nama_kandidat;
-       
-        if (isset($request->date[$kandidatId])) {
-        $tanggal = $request->date[$kandidatId];
-
-        $tanggalHari = date('d', strtotime($tanggal));
-        $tanggalBulan = date('m', strtotime($tanggal));
-        $tanggalTahun = date('Y', strtotime($tanggal));
-
-        $existinglogtahapan = LogTahapan::where('kandidat_id', $kandidatId)
-        ->where('hasil_status', 'Dijadwalkan')
-        ->first();
-       
-
-        if($existinglogtahapan) {
-            $request->session()->flash('error', "Gagal menyimpan data, kandidat $namakandidat sudah memiliki jadwal.");
-            return redirect(route('superadmin.belumproses.index'));
-        }
-
-
+        // Simpan log tahapan baru
         LogTahapan::create([
-                'kandidat_id' => $kandidatId,
-                'status_tahapan' => $statusTahapan,
-                'tanggal' => $request->date[$kandidatId],
-                'bulan' => $tanggalBulan,
-                'tahun' => $tanggalTahun,
-                'posisi_id' => $posisiid,
-                'wilayah_id' => $wilayahid,
-                'hasil_status' => 'Dijadwalkan',
-                'flag_tahapan' => 'Simpan Kandidat',
+            'kandidat_id' => $kandidatId,
+            'status_tahapan' => $statusTahapan,
+            'tanggal' => $tanggal,
+            'bulan' => $tanggalBulan,
+            'tahun' => $tanggalTahun,
+            'posisi_id' => $posisiidnew,
+            'wilayah_id' => $wilayahidnew,
+            'hasil_status' => 'Dijadwalkan',
+            'flag_tahapan' => 'Simpan Kandidat',
+            'requester' => Auth::user()->nama,
+            'waktu' => now(),
         ]);
 
-        }
     }
-    
-    $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
 
+    $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
     return redirect(route('superadmin.save.index'));
 }
 
 
+public function jadwalstoretidaklolos(Request $request){
+        
+    $request->validate([
+        'status' => 'required',
+        'date' => 'required|date',
+    ]);
+
+    // Ambil input status dan tanggal yang akan diterapkan pada semua kandidat
+    $statusTahapan = $request->status;
+    $tanggal = $request->date;
+    $posisiidnew = $request->posisi_id;
+    $wilayahidnew = $request->wilayah_id;
+
+    
+    $tanggalHari = date('d', strtotime($tanggal));
+    $tanggalBulan = date('m', strtotime($tanggal));
+    $tanggalTahun = date('Y', strtotime($tanggal));
+
+    // Proses setiap kandidat menggunakan ID yang dikirim
+    foreach ($request->candidates as $kandidatId) {
+        $datakandidat = Kandidat::find($kandidatId);
+        $posisiid = $datakandidat->posisi_id;
+        $wilayahid = $datakandidat->wilayah_id;
+        $namakandidat = $datakandidat->nama_kandidat;
+
+        $datakandidat = Kandidat::find($kandidatId);
+       
+       
+        $datakandidat->posisi_id = $posisiidnew;
+        $datakandidat->wilayah_id = $wilayahidnew;
+        $datakandidat->save();
+ 
+
+        // Cek apakah sudah ada jadwal untuk kandidat ini
+
+
+        // Update status hire kandidat
+        $datakandidat->status_hire = "$statusTahapan Sudah Dijadwalkan";
+        $datakandidat->save();
+
+        // Simpan log tahapan baru
+        LogTahapan::create([
+            'kandidat_id' => $kandidatId,
+            'status_tahapan' => $statusTahapan,
+            'tanggal' => $tanggal,
+            'bulan' => $tanggalBulan,
+            'tahun' => $tanggalTahun,
+            'posisi_id' => $posisiidnew,
+            'wilayah_id' => $wilayahidnew,
+            'hasil_status' => 'Dijadwalkan',
+            'flag_tahapan' => 'Tidak Lolos',
+            'requester' => Auth::user()->nama,
+            'waktu' => now(),
+        ]);
+
+    }
+
+    $request->session()->flash('success', 'Penjadwalan kandidat berhasil dibuat.');
+    return redirect(route('superadmin.tidaklolos.index'));
+}
 
 
 public function saveafterindex(Request $request) {
@@ -4058,7 +4557,7 @@ public function trainertrainerindex(Request $request){
     ->where('status_tahapan', 'Training')
     ->where(function ($query) {
         $query->where('hasil_status', 'Dijadwalkan')
-              ->orWhere('hasil_status', 'Tidak Hadir')
+              
               ->orWhere('hasil_status', 'Lolos')
               ->orWhere('hasil_status', 'Tidak Lolos');;
     })
@@ -4098,6 +4597,8 @@ public function trainertrainerindex(Request $request){
 
     // Get all log tahapan that match the criteria
     $logTahapan = $query->orderBy('created_at', 'desc')->get();
+
+   
     $posisi = Posisi::whereIn('id', $assignedPosisiIds)->get();
 
     return view('trainer.training.index', [
@@ -4140,7 +4641,7 @@ public function trainertrainerindex(Request $request){
     ->where('status_tahapan', 'Tandem')
     ->where(function ($query) {
         $query->where('hasil_status', 'Dijadwalkan')
-              ->orWhere('hasil_status', 'Tidak Hadir')
+              
               ->orWhere('hasil_status', 'Lolos')
               ->orWhere('hasil_status', 'Tidak Lolos');;
     })

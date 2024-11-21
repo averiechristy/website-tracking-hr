@@ -23,6 +23,20 @@
        
     
                         <input type="date" name="tanggal" id="tanggal" class="form-control mr-3" required>
+
+                        <script>
+document.addEventListener('DOMContentLoaded', function() {
+    var dateInput = document.getElementById('tanggal');
+    
+    // Set maximum date to today's date
+    var today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('max', today);
+    
+    dateInput.addEventListener('click', function() {
+        this.showPicker();
+    });
+});
+</script>
           
                         <select name="sumber" id="sumber" class="form-select mr-3" required>
             <option value="" disabled selected>Pilih Sumber</option>
@@ -86,17 +100,43 @@
 
           <!-- Tanggal Awal filter -->
           <div class="col-md-4 mt-3">
-            <input type="date" name="filter_tanggal_awal" class="form-control" value="{{ request('filter_tanggal_awal') }}" onchange="this.form.submit()">
+            <input type="date" name="filter_tanggal_awal" id ="tglawal" class="form-control" value="{{ request('filter_tanggal_awal') }}" onchange="this.form.submit()">
         </div>
 
         <!-- Tanggal Akhir filter -->
         <div class="col-md-4 mt-3">
-            <input type="date" name="filter_tanggal_akhir" class="form-control" value="{{ request('filter_tanggal_akhir') }}" onchange="this.form.submit()">
+            <input type="date" name="filter_tanggal_akhir" id="tglakhir" class="form-control" value="{{ request('filter_tanggal_akhir') }}" onchange="this.form.submit()">
         </div>
     </div>
 </form>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var dateInput = document.getElementById('tglawal');
+    
+    // Set maximum date to today's date
+    var today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('max', today);
+    
+    dateInput.addEventListener('click', function() {
+        this.showPicker();
+    });
+});
+</script>
 
-
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var dateInput = document.getElementById('tglakhir');
+    
+    // Set maximum date to today's date
+    var today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('max', today);
+    
+    dateInput.addEventListener('click', function() {
+        this.showPicker();
+    });
+    
+});
+</script>
                     <div class="mb-3">
                         <!-- <a href="#" id="processNoHpButton" class="btn btn-sm btn-warning">Proses No Hp</a> -->
                         <a href="#" id="copyNoHpButton" class="btn btn-sm btn-warning">Copy No Hp</a>
@@ -162,21 +202,31 @@
         <td>{{ $item->status_hire }}</td>
         <td> <a href="{{ route('detailtahapan', $item->id) }}" class="detail-member">Lihat Detail</a></td> 
         <td>{{ $item->created_by }}</td>
-        <td>
-            <a href="{{ route('superadminshowkandidat', $item->id) }}" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Edit">
-                <i class="bi bi-pencil"></i>
-            </a>
-            <!-- Delete Button Form -->
-            <form method="POST" action="{{ route('superadmindeletekandidat', $item->id) }}" style="display: inline;">
-    @csrf
-    @method('DELETE')
-    <button type="submit" class="btn btn-sm btn-danger show_confirm" data-bs-toggle="tooltip" title="Hapus" 
-        @if ($item->status_hire !== 'Belum Diproses') disabled @endif>
-        <i class="bi bi-trash" style="color:white;"></i>
-    </button>
-</form>
+        <td >
+            <div class="action-buttons">
+    <a href="{{ $item->status_hire === 'Belum Diproses' ? route('superadminshowkandidat', $item->id) : '#' }}" 
+       class="btn btn-sm btn-warning {{ $item->status_hire !== 'Belum Diproses' ? 'disabled' : '' }}" 
+       data-bs-toggle="tooltip" 
+       title="Edit" 
+       @if ($item->status_hire !== 'Belum Diproses') tabindex="-1" aria-disabled="true" @endif>
+        <i class="bi bi-pencil"></i>
+    </a>
 
-        </td>
+    <form method="POST" action="{{ route('superadmindeletekandidat', $item->id) }}" style="display: inline;">
+        @csrf
+        @method('DELETE')
+        <button type="submit" 
+                class="btn btn-sm btn-danger show_confirm {{ $item->status_hire !== 'Belum Diproses' ? 'disabled' : '' }}" 
+                data-bs-toggle="tooltip" title="Hapus" 
+                @if ($item->status_hire !== 'Belum Diproses') disabled @endif>
+            <i class="bi bi-trash" style="color: white;"></i>
+        </button>
+    </form>
+
+    </div>
+</td>
+
+
     </tr>
 @endforeach
                             </tbody>

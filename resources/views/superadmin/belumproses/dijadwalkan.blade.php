@@ -6,8 +6,6 @@
 </div>
 @include('components.alert')    
 
-
-
 <section class="section dashboard">
 <div class="row">
 <div class="col-lg-12">
@@ -39,6 +37,7 @@
     </div> 
     </div>
 </form>
+
 <div class="table-responsive mt-4">
                         <div class="dataTables_length mb-3" id="myDataTable_length">
                             <label for="entries"> Show
@@ -79,10 +78,9 @@
             <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</td>
             <td class="hasilStatus">{{ $item->hasil_status }}</td>
             <td>
-            <button type="button" class="btn btn-info btn-sm mr-2 mt-2" 
-    onclick="bukaModalUbahJadwal({{ $item->id }}, '{{ $item->status_tahapan }}', '{{ $item->tanggal }}', '{{ $item->kandidat->nama_kandidat }}')" {{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>
-    Ubah Jadwal
-</button>
+            <button type="button" class="btn btn-info btn-sm mr-2 mt-2" onclick="bukaModalUbahJadwal({{ $item->id }}, '{{ $item->status_tahapan }}', '{{ $item->tanggal }}', '{{ $item->kandidat->nama_kandidat }}')" {{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>
+                 Ubah Jadwal
+            </button>
 </td>
 
             <td>
@@ -179,9 +177,10 @@
               <option value="Psikotes">Psikotes</option>
               <option value="Interview HR">Interview HR</option>
               <option value="Interview User">Interview User</option>
+              <option value="Interview User 2">Interview User 2</option>
+              <option value="Interview User 3">Interview User 3</option>
               <option value="Training">Training</option>
-              <option value="Tandem">Tandem</option>
-              <option value="Join">Join</option>
+              <option value="Proses PKM">Proses PKM</option>
             </select>
           </div>
           <div class="mb-3">
@@ -357,6 +356,7 @@ function simpanPerubahanJadwal() {
         new bootstrap.Modal(document.getElementById('generalConfirmModal')).show();
     }
 }
+
 function saveAsCandidate() {
     // Update status menjadi "Simpan Kandidat"
     updateStatus('simpan kandidat');
@@ -367,17 +367,13 @@ function proceedWithoutSavingdua() {
     let saveCandidateConfirmModal = bootstrap.Modal.getInstance(document.getElementById('saveCandidateConfirmModal'));
     saveCandidateConfirmModal.hide();
 
-
-   
-
     // Lanjutkan update status berdasarkan action yang dipilih sebelum modal muncul
     updateStatus(selectedAction);
 }
+
 function proceedWithoutSavingdua() {
     // Tutup modal dan lanjutkan dengan status "stop proses" atau "tidak lolos"
   
-
-
     let saveCandidateConfirmModaldua = bootstrap.Modal.getInstance(document.getElementById('saveCandidateConfirmModaldua'));
     saveCandidateConfirmModaldua.hide();
 

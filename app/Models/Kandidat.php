@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Blacklist;
 
 class Kandidat extends Model
 {
@@ -27,7 +28,7 @@ class Kandidat extends Model
         'user_id',
         'updated_by',
       ];
-
+   
       public function posisi()
       {
   
@@ -61,7 +62,12 @@ class Kandidat extends Model
 
       public function blacklist()
 {
-    return $this->hasOne(BlackList::class);
+    return $this->hasOne(Blacklist::class);
+}
+
+public function trainingabm()
+{
+    return $this->hasOne(TrainingABM::class);
 }
 
 }

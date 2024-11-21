@@ -21,7 +21,11 @@ class LogTahapan extends Model
         'hasil_status',
         'flag_tahapan',
         'flag_kehadiran',
-        'flag_schedule'
+        'flag_schedule',
+        'requester',
+        'waktu',
+        'abm_id',
+        'nama_abm',
 
     ];
 

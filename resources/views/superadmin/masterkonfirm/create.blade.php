@@ -12,12 +12,12 @@
                 <form action="{{route('superadmin.masterkonfirm.store')}}" class="mt-3" id="saveform" onsubmit="return validateForm()" method="post">
                     @csrf
 
-                    <!-- Input Tanggal -->
                     <div class="mb-3">
                         <label for="inputTanggal" class="form-label">Tanggal</label>
                         <input type="date" name="tanggal" id="tanggal" class="form-control">
                     </div>
-                    <script>
+                    
+<script>
 document.addEventListener('DOMContentLoaded', function() {
     var dateInput = document.getElementById('tanggal');
     
@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     dateInput.addEventListener('click', function() {
         this.showPicker();
     });
+    
 });
 </script>
 
@@ -57,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </select>
                         </div>
                     @else
+
                     <div class="mb-3">
                         <label for="selectUser" class="form-label">PIC</label>
                             <select name="sourcing_id" id="sourcingid" class="form-select select2" style="color:black;">
@@ -329,7 +331,7 @@ function validateForm() {
     }
   
     if (konfirmmanual > undangotomatis){
-        alert("Jumlah konfirm tidak boleh kurang dari jumlah undang");
+        alert("Jumlah konfirm tidak boleh lebih dari jumlah undang");
         return false;
     }
 

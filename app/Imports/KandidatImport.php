@@ -3,8 +3,10 @@
 namespace App\Imports;
 
 use App\Models\Kandidat;
+use App\Models\LogActivity;
 use App\Models\Posisi;
 use App\Models\Wilayah;
+use Auth;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -60,6 +62,12 @@ class KandidatImport implements ToCollection, WithHeadingRow
             $wilayah = $row['wilayah'];
 
             $contact = $row['no_handphone'];
+
+            if (substr($contact, 0, 3) === '+62') {
+                // Ganti "+62" dengan "0"
+                $contact = '0' . substr($contact, 3);
+            }
+
             $namakandidat = $row['nama_kandidat'];
             $contactedited = preg_replace('/^\+62/', '0', $contact);
 
@@ -116,7 +124,7 @@ class KandidatImport implements ToCollection, WithHeadingRow
                 'tahun' => $tahun,
                 'nama_kandidat' => $row['nama_kandidat'],
                 'posisi' => $posisi,
-                'no_hp' => $contactedited,
+                'no_hp' => $contact,
                 'email' => $row['email'],
                 'posisi_id' => $posisiid,
                 'sumber_id' => $this->sumber,
@@ -124,6 +132,15 @@ class KandidatImport implements ToCollection, WithHeadingRow
                 'status_hire' => "Belum Diproses",
                 'created_by' => $loggedInUsername,
                 'user_id' => $userid,
+            ]);
+
+            LogActivity::create([
+                'user_id' => Auth::id(),
+                'nama_user' =>  Auth::user()->nama,
+                'activity' => 'Tambah Kandidat',
+                'description' => 'Berhasil menambahkan kandidat ' . $row['nama_kandidat'],
+                'timestamp' => now(),
+                'role_id' =>  Auth::user()->role_id,
             ]);
         }
 

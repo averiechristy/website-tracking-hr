@@ -382,6 +382,9 @@
                         var tandemData = [];
                         var pkmbaruData = [];
 
+                       
+                        
+
 if (bulan === 'all') {
     labels = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -394,7 +397,7 @@ if (bulan === 'all') {
         tandemData.push(response.tandem_bulan['tandem_bulan_' + i] || 0);
         pkmbaruData.push(response.pkmbaru_bulan['pkmbaru_bulan_' + i] || 0);
     }
-
+    console.log(trainingData);
     var colors = [];
 var hueSteps = 60; // Set a minimum step between hues to ensure distinct colors
 

@@ -11,37 +11,47 @@
             <!-- Form input start -->
             <form action="{{route('superadmin.targetjumlah.store')}}"  class="mt-3" id="saveform" class="mt-3" onsubmit="return validateForm()" method="post">
                     @csrf
+                    
                     <div class="mb-3">
-                    <label class="form-label">Bulan & Tahun</label>
-                    <input type="month" name="month" id ="month" class="form-control" >
-                  </div>
-                  <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var dateInput = document.getElementById('month');
-    
-    // Set maximum date to today's date
-    var today = new Date().toISOString().split('T')[0];
-    dateInput.setAttribute('max', today);
-    
-    dateInput.addEventListener('click', function() {
-        this.showPicker();
-    });
-    
-});
+  <label class="form-label">Bulan & Tahun</label>
+  <input type="text" name="month" id="month" class="form-control">
+</div>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+
+<script>
+  flatpickr("#month", {
+    dateFormat: "Y-m", // Format untuk Tahun-Bulan
+    plugins: [new monthSelectPlugin({})] // Plugin untuk pemilihan bulan
+  });
 </script>
 
-<div class="mb-3">
-                            <label for="selectPosisi" class="form-label">Posisi</label>
-                            <select name="posisi_id" id="selectPosisi" class="form-select select2" style="color:black;">
-                                <option value="" selected disabled>Pilih Posisi</option>
+
+                <script>
+
+                document.addEventListener('DOMContentLoaded', function() {
+                      var dateInput = document.getElementById('month');
+                      
+                      var today = new Date().toISOString().split('T')[0];
+                      dateInput.setAttribute('max', today);
+                      
+                      dateInput.addEventListener('click', function() {
+                          this.showPicker();
+                      });                      
+                });
+
+                </script>
+
+                <div class="mb-3">
+                      <label for="selectPosisi" class="form-label">Posisi</label>
+                        <select name="posisi_id" id="selectPosisi" class="form-select select2" style="color:black;">
+                                <option value="" selected disabled>Pilih Posisi/option>
                                 @foreach ($posisi as $item)
                                     <option value="{{ $item->id }}">{{ $item->nama_posisi }}</option>
                                 @endforeach
-                            </select>
-                        </div>
-
-                       
-
+                      </select>
+                </div>
+       
                   <div class="mb-3">
                     <label class="form-label">Target MPP</label>
                     <input type="number" name="target_mpp" id ="target_mpp" class="form-control" oninput="validasiNumber(this)">
@@ -58,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   </div>
                 
               <button type="submit" class="btn btn-primary">Simpan</button>
+            
             </form>
             <!-- Form input end -->
           </div>

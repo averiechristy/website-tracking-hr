@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ABMController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlacklistController;
 use App\Http\Controllers\DashboardController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\AkunUserController;
 use App\Http\Controllers\ProsesRekrutmenController;
 use App\Http\Controllers\SumberController;
 use App\Http\Controllers\TargetJumlahController;
+use App\Http\Controllers\TrainingABMController;
 use App\Http\Controllers\WilayahController;
 use App\Models\Blacklist;
 use App\Models\LogActivity;
@@ -33,6 +35,13 @@ Route::post('/logout', [AuthController::class,'logout'])->name('logout');
 
 //SUPERADMIN
 Route::middleware('auth')->group(function () {
+
+Route::get('/rekrutmendashboard', [DashboardController::class,'rekrutmenindex'])->name('rekrutmendashboard');
+Route::get('/trainerdashboard', [DashboardController::class,'trainerindex'])->name('trainerdashboard');
+
+Route::get('/trainingtrainer', [ProsesRekrutmenController::class,'trainertrainerindex'])->name('trainingtrainer');
+Route::get('/tandemtrainer', [ProsesRekrutmenController::class,'tandemtrainerindex'])->name('tandemtrainer');
+
     
 Route::get('/dashboard', [DashboardController::class,'superadminindex'])->name('superadmindashboard');
 Route::get('/akunuser',[AkunUserController::class,'superadminindex'])->name('superadmin.akunuser.index');
@@ -43,7 +52,6 @@ Route::post('/akunuser/update/{id}', [AkunUserController::class,'superadminupdat
 Route::delete('/deleteuser/{id}', [AkunUserController::class, 'superadmindestroy'])->name('superadmindeleteuser');
 Route::post('/user/{user}/reset-password', [AkunUserController::class,'resetPassword'])->name('reset-password');
 Route::get('/detailposisi/{id}',[AkunUserController::class,'detailposisi'])->name('detailposisi');
-
 
 Route::get('/posisi',[PosisiController::class,'superadminindex'])->name('superadmin.posisi.index');
 Route::get('/posisi/create',[PosisiController::class,'superadmincreate'])->name('superadmin.posisi.create');
@@ -106,6 +114,10 @@ Route::get('tandem',[ProsesRekrutmenController::class,'tandemindex'])->name('sup
 Route::post('/superadmin/tandem/process', [ProsesRekrutmenController::class, 'tandemprocess'])->name('superadmin.tandem.process');
 
 Route::get('lolos',[ProsesRekrutmenController::class,'lolosindex'])->name('superadmin.lolos.index');
+Route::get('lolosafter',[ProsesRekrutmenController::class,'lolosafterindex'])->name('superadmin.lolosafter.index');
+
+
+
 
 Route::get('tidaklolos',[ProsesRekrutmenController::class,'tidaklolosindex'])->name('superadmin.tidaklolos.index');
 
@@ -256,15 +268,34 @@ Route::post('/blacklist/post',[BlacklistController::class,'superadminstore'])->n
 
 Route::delete('/deleteblacklist/{id}', [BlacklistController::class, 'superadmindestroy'])->name('superadmindeleteblacklist');
 
+Route::post('/create-jadwal-tandem', [ProsesRekrutmenController::class, 'createJadwalTandem'])->name('create-jadwal-tandem');
+
+
+
+Route::get('/abm',[ABMController::class,'superadminindex'])->name('superadmin.abm.index');
+Route::get('/abm/create',[ABMController::class,'superadmincreate'])->name('superadmin.abm.create');
+Route::post('/abm/post',[ABMController::class,'superadminstore'])->name('superadmin.abm.store');
+Route::get('/abm/show/{id}',[ABMController::class,'superadminshow'])->name('superadminshowabm');
+Route::post('/abm/update/{id}', [ABMController::class,'superadminupdate'])->name('superadminupdateabm');
+Route::delete('/deleteabm/{id}', [ABMController::class, 'superadmindestroy'])->name('superadmindeleteabm');
+
+Route::get('/trainingabm',[TrainingABMController::class,'superadminindex'])->name('superadmin.trainingabm.index');
+Route::get('/trainingabm/create',[TrainingABMController::class,'superadmincreate'])->name('superadmin.trainingabm.create');
+Route::post('/trainingabm/post',[TrainingABMController::class,'superadminstore'])->name('superadmin.trainingabm.store');
+Route::delete('/deletetrainingabm/{id}', [TrainingABMController::class, 'superadmindestroy'])->name('superadmindeletetrainingabm');
+
+Route::get('/superadmin/penjadwalantidaklolos', [ProsesRekrutmenController::class, 'jadwalindextidaklolos'])->name('superadmin.penjadwalantidaklolos');
+Route::post('/superadmin/penjadwalantidaklolos/store', [ProsesRekrutmenController::class, 'jadwalstoretidaklolos'])->name('superadmin.penjadwalantidaklolos.store');
+
+
+Route::get('/getLogDetails/{candidateId}', [KandidatController::class, 'getLogDetails']);
+Route::get('/getLogDetailstraining/{candidateId}', [KandidatController::class, 'getLogDetailstraining']);
+
+Route::get('/getLogDetailstandem/{candidateId}', [KandidatController::class, 'getLogDetailstandem']);
 
 });
 
 
 //REKRUTMEN 
 
-Route::get('/rekrutmendashboard', [DashboardController::class,'rekrutmenindex'])->name('rekrutmendashboard');
-Route::get('/trainerdashboard', [DashboardController::class,'trainerindex'])->name('trainerdashboard');
-
-Route::get('/trainingtrainer', [ProsesRekrutmenController::class,'trainertrainerindex'])->name('trainingtrainer');
-Route::get('/tandemtrainer', [ProsesRekrutmenController::class,'tandemtrainerindex'])->name('tandemtrainer');
 

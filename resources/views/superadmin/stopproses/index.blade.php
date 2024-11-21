@@ -60,9 +60,7 @@
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th scope="col">
-                                        <input type="checkbox" class="contoh" id="checkAll" data-bs-toggle="tooltip" title="Select All">
-                                    </th>                              
+                                                            
                                     <th scope="col">Nama Kandidat</th>
                                     <th scope="col">Posisi</th>
                                     <th scope="col">Wilayah</th>
@@ -72,9 +70,7 @@
                         <tbody>
 @foreach ($kandidat as $item)
     <tr>
-        <td>
-            <input type="checkbox" class="rowCheckbox" name="checked_ids[]" value="{{ $item->id }}">
-        </td>
+        
         <td>
             <span data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $item->nama_kandidat }}">
                 {{ \Illuminate\Support\Str::limit($item->nama_kandidat, 15, '...') }}

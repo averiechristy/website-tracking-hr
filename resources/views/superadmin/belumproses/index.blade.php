@@ -75,9 +75,7 @@
                             <input type="checkbox" class="rowCheckbox" name="checked_ids[]" value="{{ $item->id }}">
                         </td>
                         <td>
-                            <span data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $item->nama_kandidat }}">
-                                {{ \Illuminate\Support\Str::limit($item->nama_kandidat, 15, '...') }}
-                            </span>
+                            {{$item->nama_kandidat}}
                         </td>
                         <td>{{ $item->posisi->nama_posisi }}</td>
                         <td>{{ $item->wilayah->nama_wilayah }}</td>  
@@ -159,12 +157,12 @@ function submitForm() {
     document.getElementById('processForm').submit();
 }
 
-
-   document.getElementById('checkAll').addEventListener('click', function() {
+// Event listener untuk checkbox "Select All"
+document.getElementById('checkAll').addEventListener('click', function() {
     var checkboxes = document.querySelectorAll('.rowCheckbox');
     var isChecked = this.checked;
     
-    // Only check/uncheck the visible rows
+    // Hanya check/uncheck baris yang terlihat
     var tableRows = document.querySelectorAll("table tbody tr");
     tableRows.forEach(function(row) {
         if (row.style.display !== 'none') {
@@ -173,6 +171,25 @@ function submitForm() {
         }
     });
 });
+
+// Event listener untuk setiap checkbox individual
+document.querySelectorAll('.rowCheckbox').forEach(function(checkbox) {
+    checkbox.addEventListener('click', function() {
+        var checkboxes = document.querySelectorAll('.rowCheckbox');
+        var allChecked = true;
+
+        // Cek status semua checkbox individual
+        checkboxes.forEach(function(cb) {
+            if (!cb.checked) {
+                allChecked = false;
+            }
+        });
+
+        // Set status "Select All" checkbox berdasarkan hasil pengecekan
+        document.getElementById('checkAll').checked = allChecked;
+    });
+});
+
 
 
    

@@ -286,8 +286,19 @@ public function updateStatus(Request $request)
         $existingKandidat = Kandidat::where('nama_kandidat', $namakandidat)
             ->where('no_hp', $nohp)
             ->first();
+
+          
     
         if ($existingKandidat) {
+
+            if ($existingKandidat->blacklist) {
+               
+                // Jika kandidat sudah ada di blacklist
+                $request->session()->flash('error', 'Kandidat dengan nama dan nomor hp yang sama sudah terdaftar dalam blacklist dan tidak dapat ditambahkan.');
+                return redirect(route('superadmin.kandidat.index'));
+            }
+            
+            
             // Calculate the difference in months
             $existingDate = Carbon::parse($existingKandidat->tanggal);
             $monthsDifference = $existingDate->diffInMonths($request->tanggal);
@@ -340,7 +351,7 @@ public function updateStatus(Request $request)
             'timestamp' => now(),
             'role_id' =>  Auth::user()->role_id,
         ]);
-    
+        
         $request->session()->flash('success', 'Kandidat berhasil ditambahkan.');
     
         return redirect(route('superadmin.kandidat.index'));
@@ -355,13 +366,13 @@ public function updateStatus(Request $request)
 
         $detailPosisi = DetailPosisi::where('user_id', auth()->id())->pluck('posisi_id')->toArray(); 
         
-
         // Ambil data Posisi berdasarkan kode-kode yang ada di DetailPosisi
         $filteredPosisi = Posisi::whereIn('id', $detailPosisi)->get();
 
         $posisi = $posisi->sortBy('nama_posisi'); 
         $wilayah = $wilayah->sortBy('nama_wilayah');
         $sumber = $sumber->sortBy('nama_sumber');
+
         return view('superadmin.kandidat.edit',[
             'data' => $data,
             'posisi' => $posisi,
@@ -375,8 +386,9 @@ public function updateStatus(Request $request)
      public function superadminupdate(Request $request, $id){
 
         $tanggal = $request->tanggal;
-
         $date = Carbon::parse($tanggal);
+
+        $kandidat = Kandidat::find($id);
 
         $hari = $date->day;
         $bulan = $date->month;
@@ -393,8 +405,15 @@ public function updateStatus(Request $request)
         ->where('no_hp', $nohp)
         ->where('id', '<>', $id)
         ->first();
-
+        
         if ($existingKandidat) {
+        if ($existingKandidat->blacklist) {
+
+            $kandidat -> delete();               
+            // Jika kandidat sudah ada di blacklist
+            $request->session()->flash('error', 'Kandidat dengan nama dan no hp yang sama sudah terdaftar dalam blacklist. Data yang baru saja diubah telah dihapus. ');
+            return redirect(route('superadmin.kandidat.index'));
+        }
             // Calculate the difference in months
             $existingDate = Carbon::parse($existingKandidat->tanggal);
             $monthsDifference = $existingDate->diffInMonths($request->tanggal);
@@ -417,9 +436,7 @@ public function updateStatus(Request $request)
         $namaposisi = $dataposisi->nama_posisi;
 
         $monthName = Carbon::createFromDate($tahun, $bulan, 1)->format('F');
-
-        
-
+   
         $data = Kandidat::find($id);
         $data->tanggal = $tanggal;
         $data->hari = $hari;
@@ -471,9 +488,6 @@ public function updateStatus(Request $request)
 
      }
 
-
-
-
    
      public function import(Request $request)
      {
@@ -485,7 +499,24 @@ public function updateStatus(Request $request)
         ]);
 
         try {
-    
+     $file = $request->file('file');
+
+            $reader = Excel::toArray([], $file);
+            $headingRow = $reader[0][0]; // Mengambil header dari baris ke-5 (indeks 4)
+
+
+$expectedHeaders = [
+    'Posisi',
+    'Wilayah',
+    'Nama Kandidat',
+    'No Handphone',
+    'Email'
+  ];
+
+  if ($headingRow !== $expectedHeaders) {
+    throw new \Exception("File tidak sesuai.");
+}
+
         // Import data menggunakan KandidatImport dengan sumber
         Excel::import(new KandidatImport($request->tanggal, $request->sumber), $request->file('file'));
         $request->session()->flash('success', "Kandidat berhasil ditambahkan.");
@@ -498,8 +529,36 @@ public function updateStatus(Request $request)
      }
 
 
+     public function getLogDetails($candidateId)
+     {
 
+        
+         $details = LogTahapan::where('kandidat_id', $candidateId)->with('posisi', 'wilayah')->get();
+         return response()->json($details);
+     }
+     
+     public function getLogDetailstraining($candidateId)
+     {
 
+        
+        $details = LogTahapan::where('kandidat_id', $candidateId)
+        ->with('posisi', 'wilayah')
+        ->whereIn('status_tahapan', ['Training', 'Tandem'])
+        ->get();
+    
+         return response()->json($details);
+     }
+     public function getLogDetailstandem($candidateId)
+     {
+
+        
+        $details = LogTahapan::where('kandidat_id', $candidateId)
+        ->with('posisi', 'wilayah')
+        ->whereIn('status_tahapan', ['Training', 'Tandem'])
+        ->get();
+    
+         return response()->json($details);
+     }
     public function index()
     {
         //

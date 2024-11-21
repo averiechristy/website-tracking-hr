@@ -43,30 +43,39 @@ document.getElementById('nama_posisi').addEventListener('input', function (event
                         <input type="email" name="email" class="form-control" id="inputEmail" value="{{ old('email', $user->email) }}">
                     </div>
 
-                    <!-- Dynamic Posisi and Wilayah Fields -->
-                    <div id="dynamicPosisiContainer">
-                        @foreach ($nama as $index => $detail)
-                            <div class="posisi-group mb-3" id="posisiGroup{{ $index + 1 }}">
-                                <label for="selectPosisi{{ $index + 1 }}" class="form-label">Posisi</label>
-                                <select name="posisi[{{ $index + 1 }}][posisi_id]" id="selectPosisi{{ $index + 1 }}" class="form-select select2" style="color:black;">
-                                    @foreach ($posisi as $item)
-                                        <option value="{{ $item->id }}" {{ $detail->posisi_id == $item->id ? 'selected' : '' }}>{{ $item->nama_posisi }}</option>
-                                    @endforeach
-                                </select>
+                   <!-- Dynamic Posisi and Wilayah Fields -->
+                   <!-- Form Edit -->
+<div id="dynamicPosisiContainer">
+    @foreach ($nama as $index => $detail)
+        <div class="posisi-group mb-3" id="posisiGroup{{ $index + 1 }}">
+            <label for="selectPosisi{{ $index + 1 }}" class="form-label">Posisi</label>
+            <select name="posisi[{{ $index + 1 }}][posisi_id]" id="selectPosisi{{ $index + 1 }}" class="form-select select2" style="color:black;">
+                <option value="" disabled>Pilih Posisi</option>
+                @foreach ($posisi as $item)
+                    <option value="{{ $item->id }}" {{ $detail->posisi_id == $item->id ? 'selected' : '' }}>
+                        {{ $item->nama_posisi }}
+                    </option>
+                @endforeach
+            </select>
 
-                                <label for="selectWilayah{{ $index + 1 }}" class="form-label mt-2">Wilayah</label>
+            <label for="selectWilayah{{ $index + 1 }}" class="form-label mt-2">Wilayah</label>
                                 <select name="posisi[{{ $index + 1 }}][wilayah][]" id="selectWilayah{{ $index + 1 }}" class="form-select select2" multiple="multiple" style="color:black; width:100%;">
-                                    @foreach ($wilayah as $item)
+                                <option value="all" {{ in_array('all', explode(',', $detail->wilayah)) ? 'selected' : '' }}>Semua Wilayah</option>
+    
+                                @foreach ($wilayah as $item)
                                         <option value="{{ $item->id }}" {{ in_array($item->nama_wilayah, explode(',', $detail->wilayah)) ? 'selected' : '' }}>{{ $item->nama_wilayah }}</option>
-                                    @endforeach
+                                @endforeach
+
                                 </select>
 
-                                <button type="button" class="btn btn-danger btn-sm mt-2 removePosisiButton">Hapus Posisi</button>
-                            </div>
-                        @endforeach
-                    </div>
+            <button type="button" class="btn btn-danger btn-sm mt-2 removePosisiButton">Hapus Posisi</button>
+        </div>
+    @endforeach
+</div>
 
-                    <button type="button" id="addPosisiButton" class="btn btn-secondary btn-sm mb-3">Tambah Posisi</button>
+<button type="button" id="addPosisiButton" class="btn btn-secondary btn-sm mb-3">Tambah Posisi</button>
+
+
                     <div class="mb-3">
                         <button type="submit" class="btn btn-primary">Simpan</button>
                     </div>
@@ -91,9 +100,33 @@ $(document).ready(function() {
 
     // Initialize Select2 for existing dynamic fields
     $('.select2').select2({
-        placeholder: "Pilih...",
-        allowClear: true
-    });
+    placeholder: "Pilih...",
+    allowClear: true
+});
+
+$('.select2').on('select2:select', function (e) {
+    const selectedValue = e.params.data.id;
+    if (selectedValue === 'all') {
+        const allOptions = $(this).find('option').map(function () {
+            return $(this).val();
+        }).get().filter(value => value !== 'all');
+        $(this).val(allOptions).trigger('change');
+    }
+});
+
+$('.select2').on('select2:unselect', function (e) {
+    const unselectedValue = e.params.data.id;
+    if (unselectedValue === 'all') {
+        $(this).val(null).trigger('change');
+    }
+});
+
+    if ($('#selectRole').val() == 2 || $('#selectRole').val() == 3) {
+        $('#addPosisiButton').show();
+        $('#dynamicPosisiContainer').show();
+    } else {
+        $('#addPosisiButton').hide();
+    }
 
     // Dynamically add/remove Posisi and Wilayah fields
     $('#addPosisiButton').click(function() {
@@ -111,15 +144,17 @@ $(document).ready(function() {
                     @endforeach
                 </select>
 
-                <label for="selectWilayah${count}" class="form-label mt-2">Wilayah</label>
-                <select name="posisi[${count}][wilayah][]" id="selectWilayah${count}" class="form-select select2" multiple="multiple" style="color:black; width:100%;">
-                    @foreach ($wilayah as $item)
-                        <option value="{{ $item->id }}">{{ $item->nama_wilayah }}</option>
-                    @endforeach
-                </select>
+            <label for="selectWilayah${count}" class="form-label mt-2">Wilayah</label>
+<select name="posisi[${count}][wilayah][]" id="selectWilayah${count}" class="form-select select2" multiple="multiple" style="color:black; width:100%;">
+    <option value="all">Semua Wilayah</option>
+    @foreach ($wilayah as $item)
+        <option value="{{ $item->id }}">{{ $item->nama_wilayah }}</option>
+    @endforeach
+</select>
 
                 <button type="button" class="btn btn-danger btn-sm mt-2 removePosisiButton">Hapus Posisi</button>
             </div>
+            
         `;
         $('#dynamicPosisiContainer').append(html);
         
@@ -135,9 +170,32 @@ $(document).ready(function() {
         });
 
         $('#selectWilayah' + count).select2({
-            placeholder: "Pilih Wilayah",
-            allowClear: true
-        });
+    placeholder: "Pilih Wilayah",
+    allowClear: true
+});
+
+// Logika untuk "Semua Wilayah"
+$('#selectWilayah' + count).on('select2:select', function (e) {
+    const selectedValue = e.params.data.id;
+
+    if (selectedValue === 'all') {
+        // Jika "Semua Wilayah" dipilih, pilih semua opsi lainnya
+        const allOptions = $(this).find('option').map(function () {
+            return $(this).val();
+        }).get().filter(value => value !== 'all'); // Kecuali "Semua Wilayah"
+        
+        $(this).val(allOptions).trigger('change');
+    }
+});
+
+$('#selectWilayah' + count).on('select2:unselect', function (e) {
+    const unselectedValue = e.params.data.id;
+
+    if (unselectedValue === 'all') {
+        // Jika "Semua Wilayah" di-unselect, hapus semua pilihan
+        $(this).val(null).trigger('change');
+    }
+});
     }
 
     // Remove Posisi field group
@@ -147,23 +205,17 @@ $(document).ready(function() {
 
     // Show/hide Posisi and Wilayah fields based on role selection
     $('#selectRole').change(function() {
-        if ($(this).val() == 2) { // Role ID 2 is "Rekrutmen"
-            $('#addPosisiButton').show();
-            $('#dynamicPosisiContainer').show();
-        }
-       else if ($(this).val() == 3) { // Role ID 2 is "Rekrutmen"
+        if ($(this).val() == 2 || $(this).val() == 3) {
             $('#addPosisiButton').show();
             $('#dynamicPosisiContainer').show();
         } else {
             $('#addPosisiButton').hide();
-            $('#dynamicPosisiContainer').hide(); // Clear all dynamic fields if role is not Rekrutmen
+            $('#dynamicPosisiContainer').hide();
         }
     });
 
     // Initially hide Add Posisi button if not Rekrutmen
-    if ($('#selectRole').val() != 2) {
-        $('#addPosisiButton').hide();
-    }
+   
 });
 
 function validateForm() {

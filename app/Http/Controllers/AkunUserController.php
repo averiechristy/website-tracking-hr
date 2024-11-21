@@ -178,7 +178,7 @@ class AkunUserController extends Controller
          $data->save();
      
          // If the role is "Rekrutmen", save positions and regions in DetailPosisi
-         if ($roleid == 2) {
+         if ($roleid == 2 || $roleid == 3) {
              // Delete existing DetailPosisi records for the user
              DetailPosisi::where('user_id', $id)->delete();
      
@@ -268,9 +268,9 @@ class AkunUserController extends Controller
  
          $deleteduser = $user->nama;
  
- 
              if($user->role_id == 1){
-                 if ($user->Role->nama_role === 'Superadmin') {
+
+                if ($user->Role->nama_role === 'Superadmin') {
                      if ($user->id === Auth::id()) {
                          return redirect()->route('superadmin.akunuser.index')->with('error', 'Tidak dapat menghapus akun anda sendiri.');
                      }
@@ -284,12 +284,6 @@ class AkunUserController extends Controller
                      }
                  }
                  
-     
-             
-     
-     
-           
-     
          }
 
   

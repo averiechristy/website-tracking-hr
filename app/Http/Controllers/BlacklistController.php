@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Blacklist;
 use App\Models\DetailPosisi;
 use App\Models\Kandidat;
+use App\Models\LogActivity;
 use App\Models\LogTahapan;
+use Auth;
 use Illuminate\Http\Request;
 
 class BlacklistController extends Controller
@@ -99,10 +101,15 @@ class BlacklistController extends Controller
 
     public function superadminstore(Request $request){
 
+
+        $user = auth()->user();
+        $nama = $user ->nama;
+
         foreach ($request->kandidat_id as $index => $kandidatId) {
             Blacklist::create([
                 'kandidat_id' => $kandidatId,
                 'keterangan' => $request->keterangan[$index] ?? null,
+                'created_by' => $nama,
             ]);
 
             $datakandidat = Kandidat::find($kandidatId);
@@ -114,6 +121,7 @@ class BlacklistController extends Controller
             $bulan = $now->format('m'); // Mendapatkan bulan
             $tahun = $now->format('Y'); // Mendapatkan tahun
 
+            $nama = $datakandidat->nama_kandidat;
            
         LogTahapan::create([
                 'kandidat_id' => $kandidatId,
@@ -125,6 +133,15 @@ class BlacklistController extends Controller
                 'wilayah_id' => $wilayahid,
                 'hasil_status' => 'Blacklist',
                 'flag_tahapan' => 'Blacklist',
+        ]);
+
+        LogActivity::create([
+            'user_id' => Auth::id(),
+            'nama_user' =>  Auth::user()->nama,
+            'activity' => 'Blacklist Kandidat',
+            'description' => 'Menambahkan ' . $nama . 'ke dalam daftar blacklist.',
+            'timestamp' => now(),
+            'role_id' =>  Auth::user()->role_id,
         ]);
 
         }
@@ -139,6 +156,9 @@ class BlacklistController extends Controller
         $blacklist = Blacklist::find($id);
 
         $kandidatid = $blacklist->kandidat_id;
+
+        $datakandidat = Kandidat::find($kandidatid);
+        $namakandidat = $datakandidat->nama_kandidat;
         
         $logtahapan = LogTahapan::where('kandidat_id', $kandidatid)
         ->where('status_tahapan', 'Blacklist')
@@ -147,6 +167,16 @@ class BlacklistController extends Controller
         $logtahapan->delete();
 
         $blacklist->delete();
+
+
+        LogActivity::create([
+            'user_id' => Auth::id(),
+            'nama_user' =>  Auth::user()->nama,
+            'activity' => 'Hapus Daftar Blacklist',
+            'description' => "Berhasil menghapus $namakandidat dari daftar Blacklist",
+            'timestamp' => now(),
+            'role_id' =>  Auth::user()->role_id,
+        ]);
 
         $request->session()->flash('success', "Kandidat berhasil dihapus dalam daftar blacklist.");
 

@@ -2,7 +2,7 @@
 @section('content')
 <main id="main" class="main">
 <div class="pagetitle">
-  <h1>Training (Sedang Dijadwalkan)</h1>
+  <h1>Proses PKM</h1>
 </div>
 @include('components.alert')    
 
@@ -14,7 +14,7 @@
     <div class="card">
         <div class="card-body">
                   
-<form method="GET" action="{{ route('superadmin.trainingafter.index') }}" class="mb-3 mt-4">
+<form method="GET" action="{{ route('superadmin.lolosafter.index') }}" class="mb-3 mt-4">
     <div class="row">
     <div class="col-md-4">
         <select name="filter_posisi" class="form-select" onchange="this.form.submit()">
@@ -59,163 +59,55 @@
                         <table class="table">
                             <thead>
                                 <tr>            
-                                    <th>Nama</th>      
+                                    <th >Nama</th>      
                                     <th>Posisi</th>
                                     <th>Wilayah</th> 
                                     <th>Jadwal</th>
                                     <th>Tanggal</th>
                                     <th>Keterangan</th>
-                                    <th>Ubah Jadwal</th>
+                                    <th>Requester</th>
+                                    <th>Timestamp</th>
                                     <th>Action</th>
+                                  
                                 </tr>
                             </thead>
 <tbody>
     @foreach ($logTahapan as $item)
         <tr data-id="{{ $item->id }}">
-        <td><a href="javascript:void(0);" onclick="showLogDetails({{ $item->kandidat->id }}, '{{ $item->kandidat->nama_kandidat }}')">{{ $item->kandidat->nama_kandidat }}</a></td>
-
+            <td>{{ $item->kandidat->nama_kandidat }}</td>
             <td>{{ $item->posisi->nama_posisi }}</td>
             <td>{{ $item->wilayah->nama_wilayah }}</td>
             <td>{{ $item->status_tahapan }}</td>
             <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</td>
-           
-
             <td class="hasilStatus">{{ $item->hasil_status }}</td>
+            <td>{{$item -> requester}}</td>
+            <td>{{$item->waktu}}</td>
             <td>
-            <div class="button-section">
-            <button type="button" class="btn btn-info btn-sm mr-2" 
-    onclick="bukaModalUbahJadwal({{ $item->id }}, '{{ $item->status_tahapan }}', '{{ $item->tanggal }}', '{{ $item->kandidat->nama_kandidat }}')" {{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>
-    Ubah Jadwal
-</button>
-</div>
+    <div class="button-section">
+        <button type="button" 
+                class="btn btn-warning btn-sm mr-2 {{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}" 
+                onclick="handleAction('stop proses', {{ $item->id }})" 
+                {{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>
+            Stop Proses
+        </button>
+        
+        <button type="button" 
+                class="btn btn-primary btn-sm mr-2 {{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}" 
+                onclick="handleAction('selesai proses', {{ $item->id }})" 
+                {{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>
+            Selesai Proses
+        </button>
+    </div>
 </td>
-            <td>
-            <div class="button-section">
-            @php
-            $roleid = auth()->user()->role_id;
-          
-            @endphp
-            
-            @if ($roleid === 2)
-            
-                @if ($item->status_tahapan === 'Training' && $item->flag_kehadiran === 'Tidak Hadir')
 
-                @if ($item->flag_schedule === "Rescheduled")
-                  <div class="button-section">
-                <button type="button" class="btn btn-secondary btn-sm mr-2" disabled onclick="handleAction('reschedule', {{ $item->id }})">Reschedule</button>
-
-                @else
-
-                <button type="button" class="btn btn-secondary btn-sm mr-2" onclick="handleAction('reschedule', {{ $item->id }})">Reschedule</button>
-
-                @endif
-            
-
-
-                @else
-
-                No Action Button
-
-                @endif
-
-            @else
-           
-             
-               
-                @if ($item->flag_kehadiran === 'Tidak Hadir')
-
-<button type="button" class="btn btn-success btn-sm mr-2" onclick="handleAction('lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Lolos</button>
-<button type="button" class="btn btn-danger btn-sm mr-2" onclick="handleAction('tidak lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Lolos</button>
-<button type="button" class="btn btn-warning btn-sm mr-2" onclick="handleAction('stop proses', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Stop Proses</button>
-
-@if ($item->flag_schedule === "Rescheduled")
-
-<button type="button" class="btn btn-secondary btn-sm mr-2" disabled onclick="handleAction('reschedule', {{ $item->id }})">Reschedule</button>
-
-@else
-<button type="button" class="btn btn-secondary btn-sm mr-2" onclick="handleAction('reschedule', {{ $item->id }})">Reschedule</button>
-
-@endif
-
-@else
-
-<!-- Button Section -->
-<button type="button" class="btn btn-success btn-sm mr-2" onclick="handleAction('lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Lolos</button>
-<button type="button" class="btn btn-danger btn-sm mr-2" onclick="handleAction('tidak lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Lolos</button>
-<button type="button" class="btn btn-warning btn-sm mr-2" onclick="handleAction('stop proses', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Stop Proses</button>
-<button type="button" class="btn btn-secondary btn-sm mr-2" onclick="handleAction('tidak hadir', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Hadir</button>
-@endif
-
-
-                @endif
-</div>
-            </td>
+      
         </tr>
     @endforeach
 </tbody>
 
                         </table>
                     </div>
-                    <div class="modal fade" id="logDetailsModal" tabindex="-1" role="dialog" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="logDetailsModalLabel">Detail Tahapan <span id="candidateName"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                
-            </div>
-            <div class="modal-body">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Posisi</th>
-                            <th>Wilayah</th>
-                            <th>Tahapan</th>
-                            <th>Hasil</th>
-                            <th>Tanggal</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logDetailsContent">
-                        <!-- Log details will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<script>
-    function showLogDetails(candidateId, candidateName) {
-    // Set the candidate name in the modal title
-    document.getElementById('candidateName').textContent = candidateName;
-    
-    // Clear previous log details
-    document.getElementById('logDetailsContent').innerHTML = '';
-
-    // Fetch log details for the selected candidate
-    fetch(`/getLogDetails/${candidateId}`)
-        .then(response => response.json())
-        .then(data => {
-            const logDetailsContent = document.getElementById('logDetailsContent');
-            data.forEach(item => {
-                const row = `<tr>
-                    <td>${item.posisi.nama_posisi}</td>
-                    <td>${item.wilayah.nama_wilayah}</td>
-                    <td>${item.status_tahapan}</td>
-                    <td>${item.hasil_status}</td>
-                    <td>${new Date(item.tanggal).toLocaleDateString('id-ID')}</td>
-                </tr>`;
-                logDetailsContent.insertAdjacentHTML('beforeend', row);
-            });
-            // Show the modal
-            $('#logDetailsModal').modal('show');
-        })
-        .catch(error => console.error('Error fetching log details:', error));
-}
-
-</script>
-                    <!-- Modal Ubah Jadwal -->
+<!-- Modal Ubah Jadwal -->
 <div class="modal fade" id="ubahJadwalModal" tabindex="-1" aria-labelledby="ubahJadwalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -228,33 +120,16 @@
           <div class="mb-3">
             <label for="ubahStatus" class="form-label">Jadwal</label>
             <select id="ubahStatus" class="form-select" required>
-            <option value="">-- Pilih Jadwal --</option>
-              <option value="Psikotes">Psikotes</option>
-              <option value="Interview HR">Interview HR</option>
-              <option value="Interview User">Interview User</option>
-              <option value="Interview User 2">Interview User 2</option>
-              <option value="Interview User 3">Interview User 3</option>
+              <option value="">-- Pilih Jadwal --</option>
               <option value="Training">Training</option>
-              <option value="Proses PKM">Proses PKM</option>
+                                                <option value="Tandem">Tandem</option>
+                                                <option value="Join">Join</option>
             </select>
           </div>
           <div class="mb-3">
             <label for="ubahTanggal" class="form-label">Tanggal</label>
             <input type="date" id="ubahTanggal" class="form-control" required>
           </div>
-          <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var dateInput = document.getElementById('ubahTanggal');
-    
-    // Set maximum date to today's date
-    var today = new Date().toISOString().split('T')[0];
-    dateInput.setAttribute('min', today);
-    
-    dateInput.addEventListener('click', function() {
-        this.showPicker();
-    });
-});
-</script>
         </form>
       </div>
       <div class="modal-footer">
@@ -315,19 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <label for="newDate" class="form-label">Pilih Tanggal</label>
         <input type="date" id="newDate" class="form-control" required>
       </div>
-      <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var dateInput = document.getElementById('newDate');
-    
-    // Set maximum date to today's date
-    var today = new Date().toISOString().split('T')[0];
-    dateInput.setAttribute('min', today);
-    
-    dateInput.addEventListener('click', function() {
-        this.showPicker();
-    });
-});
-</script>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
         <button type="button" class="btn btn-primary" onclick="saveReschedule()">Simpan</button>
@@ -395,9 +257,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </section>
 </main><!-- End #main -->
 
-
-
-
 <script>
     let selectedKandidatId = null;
 
@@ -443,8 +302,8 @@ function simpanPerubahanJadwal() {
     })
     .catch(error => console.error("Error:", error));
 }
-
 </script>
+
 <script>
   let selectedId = null;
 
@@ -484,7 +343,6 @@ function proceedWithoutSaving() {
     // Lanjutkan update status berdasarkan action yang dipilih sebelum modal muncul
     updateStatus(selectedAction);
 }
-
 function proceedWithoutSavingdua() {
     // Tutup modal dan lanjutkan dengan status "stop proses" atau "tidak lolos"
   
@@ -496,6 +354,7 @@ function proceedWithoutSavingdua() {
     // Lanjutkan update status berdasarkan action yang dipilih sebelum modal muncul
     updateStatus(selectedAction);
 }
+
 function proceedWithAction() {
     // Tutup modal konfirmasi umum
     let generalConfirmModal = bootstrap.Modal.getInstance(document.getElementById('generalConfirmModal'));
@@ -533,6 +392,9 @@ function updateStatus(action) {
         case 'simpan kandidat':
             status = 'Simpan Kandidat';
             break;
+            case 'selesai proses':
+            status = 'Selesai Proses';
+            break;
         default:
             status = '';
     }
@@ -564,7 +426,7 @@ function saveReschedule() {
         return;
     }
 
-    fetch("{{ route('create-log-tahapantraining') }}", {
+    fetch("{{ route('create-log-tahapanitvusertiga') }}", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -762,6 +624,57 @@ document.addEventListener('DOMContentLoaded', function () {
 
     
 });
+
+</script>
+
+
+
+
+<script>
+    let selectedKandidatId = null;
+
+    function bukaModalUbahJadwal(id, currentStatus, currentTanggal, namaKandidat) {
+    selectedKandidatId = id;
+    
+    // Atur status yang terpilih dari data
+    document.getElementById('ubahStatus').value = currentStatus;
+    document.getElementById('ubahTanggal').value = currentTanggal;
+
+    // Ganti judul modal dengan nama kandidat
+    document.getElementById('ubahJadwalLabel').textContent = `Ubah Jadwal Kandidat ${namaKandidat}`;
+
+    // Tampilkan modal
+    new bootstrap.Modal(document.getElementById('ubahJadwalModal')).show();
+}
+
+function simpanPerubahanJadwal() {
+    const status = document.getElementById('ubahStatus').value;
+    const tanggal = document.getElementById('ubahTanggal').value;
+
+    if (!status || !tanggal) {
+        alert("Silakan isi status dan tanggal.");
+        return;
+    }
+
+    fetch("{{ route('update-jadwal') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ id: selectedKandidatId, status: status, tanggal: tanggal })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Jadwal berhasil diperbarui.");
+            location.reload();
+        } else {
+            alert("Gagal memperbarui jadwal: " + data.message);
+        }
+    })
+    .catch(error => console.error("Error:", error));
+}
 
 </script>
 

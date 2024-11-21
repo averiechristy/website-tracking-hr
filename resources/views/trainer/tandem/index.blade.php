@@ -72,21 +72,19 @@
 <tbody>
     @foreach ($logTahapan as $item)
         <tr data-id="{{ $item->id }}">
-            <td>{{ $item->kandidat->nama_kandidat }}</td>
+        <td><a href="javascript:void(0);" onclick="showLogDetails({{ $item->kandidat->id }}, '{{ $item->kandidat->nama_kandidat }}')">{{ $item->kandidat->nama_kandidat }}</a></td>
+
             <td>{{ $item->posisi->nama_posisi }}</td>
             <td>{{ $item->wilayah->nama_wilayah }}</td>
             <td>{{ $item->status_tahapan }}</td>
             <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</td>
             <td class="hasilStatus">{{ $item->hasil_status }}</td>
-
             <td>
-                <button type="button" class="btn btn-success btn-sm mr-2 mt-2" onclick="handleAction('lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Lolos</button>
-                <button type="button" class="btn btn-danger btn-sm mr-2 mt-2" onclick="handleAction('tidak lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Lolos</button>
-
-                <button type="button" class="btn btn-secondary btn-sm mr-2 mt-2" onclick="handleAction('tidak hadir', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Hadir</button>
-        
-
-             
+            <div class="button-section">
+                <button type="button" class="btn btn-success btn-sm mr-2" onclick="handleAction('lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Lolos</button>
+                <button type="button" class="btn btn-danger btn-sm mr-2" onclick="handleAction('tidak lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Lolos</button>
+                <button type="button" class="btn btn-warning btn-sm mr-2" onclick="handleAction('stop proses', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Stop Proses</button>
+            </div>
             </td>
         </tr>
     @endforeach
@@ -94,6 +92,66 @@
 
                         </table>
                     </div>
+
+                    <div class="modal fade" id="logDetailsModal" tabindex="-1" role="dialog" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logDetailsModalLabel">Detail Tahapan <span id="candidateName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Posisi</th>
+                            <th>Wilayah</th>
+                            <th>Tahapan</th>
+                            <th>Hasil</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logDetailsContent">
+                        <!-- Log details will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function showLogDetails(candidateId, candidateName) {
+    // Set the candidate name in the modal title
+    document.getElementById('candidateName').textContent = candidateName;
+    
+    // Clear previous log details
+    document.getElementById('logDetailsContent').innerHTML = '';
+
+    // Fetch log details for the selected candidate
+    fetch(`/getLogDetailstandem/${candidateId}`)
+        .then(response => response.json())
+        .then(data => {
+            const logDetailsContent = document.getElementById('logDetailsContent');
+            data.forEach(item => {
+                const row = `<tr>
+                    <td>${item.posisi.nama_posisi}</td>
+                    <td>${item.wilayah.nama_wilayah}</td>
+                    <td>${item.status_tahapan}</td>
+                    <td>${item.hasil_status}</td>
+                    <td>${new Date(item.tanggal).toLocaleDateString('id-ID')}</td>
+                </tr>`;
+                logDetailsContent.insertAdjacentHTML('beforeend', row);
+            });
+            // Show the modal
+            $('#logDetailsModal').modal('show');
+        })
+        .catch(error => console.error('Error fetching log details:', error));
+}
+
+</script>
 <!-- Modal Ubah Jadwal -->
 <div class="modal fade" id="ubahJadwalModal" tabindex="-1" aria-labelledby="ubahJadwalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -107,7 +165,7 @@
           <div class="mb-3">
             <label for="ubahStatus" class="form-label">Status</label>
             <select id="ubahStatus" class="form-select" required>
-              <option value="">-- Pilih Status --</option>
+              <option value="">-- Pilih Jadwal --</option>
               <option value="Psikotes">Psikotes</option>
               <option value="Interview HR">Interview HR</option>
               <option value="Interview User">Interview User</option>

@@ -2,7 +2,7 @@
 @section('content')
 <main id="main" class="main">
 <div class="pagetitle">
-  <h1>Interview User 3 (Belum Dijadwalkan)</h1>
+  <h1>Lolos Interview User 3</h1>
 </div>
 @include('components.alert')    
 
@@ -160,11 +160,13 @@ function submitForm() {
 }
 
 
-   document.getElementById('checkAll').addEventListener('click', function() {
+   
+// Event listener untuk checkbox "Select All"
+document.getElementById('checkAll').addEventListener('click', function() {
     var checkboxes = document.querySelectorAll('.rowCheckbox');
     var isChecked = this.checked;
     
-    // Only check/uncheck the visible rows
+    // Hanya check/uncheck baris yang terlihat
     var tableRows = document.querySelectorAll("table tbody tr");
     tableRows.forEach(function(row) {
         if (row.style.display !== 'none') {
@@ -174,6 +176,23 @@ function submitForm() {
     });
 });
 
+// Event listener untuk setiap checkbox individual
+document.querySelectorAll('.rowCheckbox').forEach(function(checkbox) {
+    checkbox.addEventListener('click', function() {
+        var checkboxes = document.querySelectorAll('.rowCheckbox');
+        var allChecked = true;
+
+        // Cek status semua checkbox individual
+        checkboxes.forEach(function(cb) {
+            if (!cb.checked) {
+                allChecked = false;
+            }
+        });
+
+        // Set status "Select All" checkbox berdasarkan hasil pengecekan
+        document.getElementById('checkAll').checked = allChecked;
+    });
+});
 
    
 </script>

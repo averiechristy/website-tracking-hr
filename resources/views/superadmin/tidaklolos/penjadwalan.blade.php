@@ -5,14 +5,14 @@
 @section('content')
 <main id="main" class="main">
     <div class="pagetitle">
-    <h1>Penjadwalan Ulang Kandidat Tersimpan</h1>
+    <h1>Penjadwalan Ulang Kandidat Tidak Lolos</h1>
     </div>
 
     <div class="row">
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ route('superadmin.penjadwalansave.store') }}">
+                    <form method="POST" action="{{ route('superadmin.penjadwalantidaklolos.store') }}">
                         @csrf
                         <!-- Input untuk status dan tanggal -->
 

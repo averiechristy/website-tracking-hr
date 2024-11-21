@@ -134,9 +134,9 @@
       <div class="modal-body">
         <form id="ubahJadwalForm">
           <div class="mb-3">
-            <label for="ubahStatus" class="form-label">Status</label>
+            <label for="ubahStatus" class="form-label">Jadwal</label>
             <select id="ubahStatus" class="form-select" required>
-              <option value="">-- Pilih Status --</option>
+              <option value="">-- Pilih Jadwal --</option>
               <option value="Psikotes">Psikotes</option>
             <option value="Interview HR">Interview HR</option>
             <option value="Interview User">Interview User</option>

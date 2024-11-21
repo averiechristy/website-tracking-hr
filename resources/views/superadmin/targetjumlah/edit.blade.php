@@ -12,23 +12,19 @@
             <form action="{{route('superadminupdatetargetjumlah', $data->id)}}"  class="mt-3" id="saveform" class="mt-3" onsubmit="return validateForm()" method="post">
                     @csrf
                     <div class="mb-3">
-                    <label class="form-label">Bulan & Tahun</label>
-                    <input type="month" name="month" id ="month" class="form-control" value="{{$monthValue}}" >
-                  </div>
-                  <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var dateInput = document.getElementById('month');
-    
-    // Set maximum date to today's date
-    var today = new Date().toISOString().split('T')[0];
-    dateInput.setAttribute('max', today);
-    
-    dateInput.addEventListener('click', function() {
-        this.showPicker();
-    });
-    
-});
+  <label class="form-label">Bulan & Tahun</label>
+  <input type="text" name="month" id="month" class="form-control"  value="{{$monthValue}}">
+</div>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+
+<script>
+  flatpickr("#month", {
+    dateFormat: "Y-m", // Format untuk Tahun-Bulan
+    plugins: [new monthSelectPlugin({})] // Plugin untuk pemilihan bulan
+  });
 </script>
+
 
 <div class="mb-3">
                             <label for="selectPosisi" class="form-label">Posisi</label>

@@ -65,11 +65,24 @@ class DashboardController extends Controller
             // Counting the number of kandidat for each status
             $belumproses = $kandidat->where('status_hire', 'Belum Diproses')->count();
             $psikotes = $kandidat->where('status_hire', 'Psikotes')->count();
+            $psikotesjadwal = $kandidat->where('status_hire', 'Psikotes Sudah Dijadwalkan')->count();
             $itvhr = $kandidat->where('status_hire', 'Interview HR')->count();
+            $itvhrjadwal = $kandidat->where('status_hire', 'Interview HR Sudah Dijadwalkan')->count();
             $itvuser = $kandidat->where('status_hire', 'Interview User')->count();
+            $itvuserjadwal = $kandidat->where('status_hire', 'Interview User Sudah Dijadwalkan')->count();
+
+            $itvuserdua = $kandidat->where('status_hire', 'Interview User 2')->count();
+            $itvuserduajadwal = $kandidat->where('status_hire', 'Interview User 2 Sudah Dijadwalkan')->count();
+
+            $itvusertiga = $kandidat->where('status_hire', 'Interview User 3')->count();
+            $itvusertigajadwal = $kandidat->where('status_hire', 'Interview User 3 Sudah Dijadwalkan')->count();
+
             $training = $kandidat->where('status_hire', 'Training')->count();
+            $trainingjadwal = $kandidat->where('status_hire', 'Training Sudah Dijadwalkan')->count();
             $tandem = $kandidat->where('status_hire', 'Tandem')->count();
-            $lolos = $kandidat->where('status_hire', 'Lolos')->count();
+            $tandemjadwal = $kandidat->where('status_hire', 'Tandem Sudah Dijadwalkan')->count();
+            $lolos = $kandidat->where('status_hire', 'PKM Selesai')->count();
+            $lolosjadwal = $kandidat->where('status_hire', 'Proses PKM Sudah Dijadwalkan')->count();
             $tidaklolos = $kandidat->where('status_hire', 'Tidak Lolos')->count();
             $simpankandidat = $kandidat->where('status_hire', 'Simpan Kandidat')->count();
             $stopproses = $kandidat->where('status_hire', 'Stop Proses')->count();
@@ -80,6 +93,18 @@ class DashboardController extends Controller
             $trainingafter = $kandidat->where('status_hire', 'Training Sudah Dijadwalkan')->count();
             $tandemafter = $kandidat->where('status_hire', 'Tandem Sudah Dijadwalkan')->count();
             $simpankandidatafter = $kandidat->where('status_hire', 'Simpan Kandidat Sudah Dijadwalkan')->count();
+
+
+            $psikotessum = $psikotes + $psikotesjadwal;
+            $itvhrsum = $itvhr + $itvhrjadwal;
+            $itvusersum = $itvuser + $itvuserjadwal;
+            $itvuserduasum = $itvuserdua + $itvuserduajadwal;
+            $itvusertigasum = $itvusertiga + $itvusertigajadwal;
+            $trainingsum = $training + $trainingjadwal;
+            $tandemsum = $tandem + $tandemjadwal;
+            $lolossum = $lolos + $lolosjadwal;
+
+          
             return view('superadmin.dashboard', [
                 'belumproses' => $belumproses,
                 'psikotes' => $psikotes,
@@ -98,6 +123,25 @@ class DashboardController extends Controller
                 'tandemafter' => $tandemafter,
                 'simpankandidatafter' => $simpankandidatafter,
                 'stopproses' => $stopproses,
+                'itvhrjadwal' => $itvhrjadwal,
+                'itvuserjadwal' => $itvuserjadwal,
+                'trainingjadwal' => $trainingjadwal,
+                'tandemjadwal' => $tandemjadwal,
+                'itvuserdua' => $itvuserdua,
+                'itvuserduajadwal' => $itvuserduajadwal,
+                'itvusertiga' => $itvusertiga,
+                'itvusertigajadwal' => $itvusertigajadwal,
+                'psikotessum' => $psikotessum,
+                'itvhrsum' => $itvhrsum,
+                'itvusersum' => $itvusersum,
+                'itvuserduasum' => $itvuserduasum,
+                'itvusertigasum' => $itvusertigasum,
+                'trainingsum' => $trainingsum,
+                'tandemsum' => $tandemsum,
+                'psikotesjadwal' => $psikotesjadwal,
+                'lolosjadwal' => $lolosjadwal,
+                'lolossum' => $lolossum,
+            
             ]);
         } else  if ($roleid == 3) {
             return view('trainer.dashboard');
@@ -110,15 +154,20 @@ class DashboardController extends Controller
             $kandidat = Kandidat::where('bulan', $currentMonth)
                                 ->where('tahun', $currentYear)
                                 ->get();
-
                                                                
             $belumproses = $kandidat->where('status_hire', 'Belum Diproses')->count();
             $psikotes = $kandidat->where('status_hire', 'Psikotes')->count();
+            $psikotesjadwal = $kandidat->where('status_hire', 'Psikotes Sudah Dijadwalkan')->count();
             $itvhr = $kandidat->where('status_hire', 'Interview HR')->count();
+            $itvhrjadwal = $kandidat->where('status_hire', 'Interview HR Sudah Dijadwalkan')->count();
             $itvuser = $kandidat->where('status_hire', 'Interview User')->count();
+            $itvuserjadwal = $kandidat->where('status_hire', 'Interview User Sudah Dijadwalkan')->count();
             $training = $kandidat->where('status_hire', 'Training')->count();
+            $trainingjadwal = $kandidat->where('status_hire', 'Training Sudah Dijadwalkan')->count();
             $tandem = $kandidat->where('status_hire', 'Tandem')->count();
-            $lolos = $kandidat->where('status_hire', 'Lolos')->count();
+            $tandemjadwal = $kandidat->where('status_hire', 'Tandem Sudah Dijadwalkan')->count();
+            $lolos = $kandidat->where('status_hire', 'PKM Selesai')->count();
+            $lolosjadwal = $kandidat->where('status_hire', 'Proses PKM Sudah Dijadwalkan')->count();
             $tidaklolos = $kandidat->where('status_hire', 'Tidak Lolos')->count();
             $simpankandidat = $kandidat->where('status_hire', 'Simpan Kandidat')->count();
             $belumprosesafter = $kandidat->where('status_hire', 'Belum Diproses Sudah Dijadwalkan')->count();
@@ -129,6 +178,22 @@ class DashboardController extends Controller
             $tandemafter = $kandidat->where('status_hire', 'Tandem Sudah Dijadwalkan')->count();
             $simpankandidatafter = $kandidat->where('status_hire', 'Simpan Kandidat Sudah Dijadwalkan')->count();
             $stopproses = $kandidat->where('status_hire', 'Stop Proses')->count();
+            $itvuserdua = $kandidat->where('status_hire', 'Interview User 2')->count();
+            $itvuserduajadwal = $kandidat->where('status_hire', 'Interview User 2 Sudah Dijadwalkan')->count();
+
+            $itvusertiga = $kandidat->where('status_hire', 'Interview User 3')->count();
+            $itvusertigajadwal = $kandidat->where('status_hire', 'Interview User 3 Sudah Dijadwalkan')->count();
+
+            $psikotessum = $psikotes + $psikotesjadwal;
+            $itvhrsum = $itvhr + $itvhrjadwal;
+            $itvusersum = $itvuser + $itvuserjadwal;
+            $itvuserduasum = $itvuserdua + $itvuserduajadwal;
+            $itvusertigasum = $itvusertiga + $itvusertigajadwal;
+            $trainingsum = $training + $trainingjadwal;
+            $tandemsum = $tandem + $tandemjadwal;
+
+            $lolossum = $lolos + $lolosjadwal;
+
             return view('superadmin.dashboard', [
                 'belumproses' => $belumproses,
                 'psikotes' => $psikotes,
@@ -147,6 +212,24 @@ class DashboardController extends Controller
                 'tandemafter' => $tandemafter,
                 'simpankandidatafter' => $simpankandidatafter,
                 'stopproses' => $stopproses,
+                'itvhrjadwal' => $itvhrjadwal,
+                'itvuserjadwal' => $itvuserjadwal,
+                'trainingjadwal' => $trainingjadwal,
+                'tandemjadwal' => $tandemjadwal,
+                'itvuserdua' => $itvuserdua,
+                'itvuserduajadwal' => $itvuserduajadwal,
+                'itvusertiga' => $itvusertiga,
+                'itvusertigajadwal' => $itvusertigajadwal,
+                'psikotessum' => $psikotessum,
+                'itvhrsum' => $itvhrsum,
+                'itvusersum' => $itvusersum,
+                'itvuserduasum' => $itvuserduasum,
+                'itvusertigasum' => $itvusertigasum,
+                'trainingsum' => $trainingsum,
+                'tandemsum' => $tandemsum,
+                'psikotesjadwal' => $psikotesjadwal,
+                'lolossum' => $lolossum,
+                'lolosjadwal' => $lolosjadwal,
             ]);
         }
     

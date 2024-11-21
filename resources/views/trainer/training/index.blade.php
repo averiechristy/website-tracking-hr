@@ -72,7 +72,8 @@
 <tbody>
     @foreach ($logTahapan as $item)
         <tr data-id="{{ $item->id }}">
-            <td>{{ $item->kandidat->nama_kandidat }}</td>
+        <td><a href="javascript:void(0);" onclick="showLogDetails({{ $item->kandidat->id }}, '{{ $item->kandidat->nama_kandidat }}')">{{ $item->kandidat->nama_kandidat }}</a></td>
+
             <td>{{ $item->posisi->nama_posisi }}</td>
             <td>{{ $item->wilayah->nama_wilayah }}</td>
             <td>{{ $item->status_tahapan }}</td>
@@ -80,13 +81,13 @@
             <td class="hasilStatus">{{ $item->hasil_status }}</td>
 
             <td>
-                <button type="button" class="btn btn-success btn-sm mr-2 mt-2" onclick="handleAction('lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Lolos</button>
-                <button type="button" class="btn btn-danger btn-sm mr-2 mt-2" onclick="handleAction('tidak lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Lolos</button>
+            <div class="button-section">
+            <button type="button" class="btn btn-primary btn-sm mr-2 " onclick="handleAction('lolos tandem', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tandem</button>
 
-                <button type="button" class="btn btn-secondary btn-sm mr-2 mt-2" onclick="handleAction('tidak hadir', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Hadir</button>
-        
-
-             
+                <button type="button" class="btn btn-success btn-sm mr-2 " onclick="handleAction('lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Lolos tanpa Tandem</button>
+                <button type="button" class="btn btn-danger btn-sm mr-2 " onclick="handleAction('tidak lolos', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Lolos</button>
+                <button type="button" class="btn btn-secondary btn-sm mr-2 " onclick="handleAction('tidak hadir', {{ $item->id }})"{{ $item->hasil_status !== 'Dijadwalkan' ? 'disabled' : '' }}>Tidak Hadir</button>
+                </div>
             </td>
         </tr>
     @endforeach
@@ -94,6 +95,66 @@
 
                         </table>
                     </div>
+
+                    <div class="modal fade" id="logDetailsModal" tabindex="-1" role="dialog" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logDetailsModalLabel">Detail Tahapan <span id="candidateName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Posisi</th>
+                            <th>Wilayah</th>
+                            <th>Tahapan</th>
+                            <th>Hasil</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logDetailsContent">
+                        <!-- Log details will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function showLogDetails(candidateId, candidateName) {
+    // Set the candidate name in the modal title
+    document.getElementById('candidateName').textContent = candidateName;
+    
+    // Clear previous log details
+    document.getElementById('logDetailsContent').innerHTML = '';
+
+    // Fetch log details for the selected candidate
+    fetch(`/getLogDetailstraining/${candidateId}`)
+        .then(response => response.json())
+        .then(data => {
+            const logDetailsContent = document.getElementById('logDetailsContent');
+            data.forEach(item => {
+                const row = `<tr>
+                    <td>${item.posisi.nama_posisi}</td>
+                    <td>${item.wilayah.nama_wilayah}</td>
+                    <td>${item.status_tahapan}</td>
+                    <td>${item.hasil_status}</td>
+                    <td>${new Date(item.tanggal).toLocaleDateString('id-ID')}</td>
+                </tr>`;
+                logDetailsContent.insertAdjacentHTML('beforeend', row);
+            });
+            // Show the modal
+            $('#logDetailsModal').modal('show');
+        })
+        .catch(error => console.error('Error fetching log details:', error));
+}
+
+</script>
 <!-- Modal Ubah Jadwal -->
 <div class="modal fade" id="ubahJadwalModal" tabindex="-1" aria-labelledby="ubahJadwalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -107,7 +168,7 @@
           <div class="mb-3">
             <label for="ubahStatus" class="form-label">Status</label>
             <select id="ubahStatus" class="form-select" required>
-              <option value="">-- Pilih Status --</option>
+              <option value="">-- Pilih Jadwal --</option>
               <option value="Psikotes">Psikotes</option>
               <option value="Interview HR">Interview HR</option>
               <option value="Interview User">Interview User</option>
@@ -125,6 +186,42 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
         <button type="button" class="btn btn-primary" onclick="simpanPerubahanJadwal()">Simpan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL BUAT JADWAL TANDEM -->
+
+<div class="modal fade" id="buatTandemModal" tabindex="-1" aria-labelledby="buatTandemModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="buatTandemModalLabel">Buat Jadwal Tandem</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <label for="newDateTandem" class="form-label">Pilih Tanggal</label>
+        <input type="date" id="newDateTandem" class="form-control" required>
+      </div>
+
+      <script>
+document.addEventListener('DOMContentLoaded', function() {
+    var dateInput = document.getElementById('newDateTandem');
+    
+    // Set maximum date to today's date
+    var today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
+    
+    dateInput.addEventListener('click', function() {
+        this.showPicker();
+    });
+});
+</script>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary" onclick="buatJadwalTandem()">Simpan</button>
       </div>
     </div>
   </div>
@@ -267,8 +364,15 @@ function handleAction(action, id) {
     selectedId = id;
     selectedAction = action;
 
+
+    if (action === 'lolos tandem') {
+        // Tampilkan modal bertanya untuk Simpan Kandidat atau Tidak
+        new bootstrap.Modal(document.getElementById('buatTandemModal')).show();
+    } else {
         // Tampilkan modal konfirmasi umum sebelum update status
         new bootstrap.Modal(document.getElementById('generalConfirmModal')).show();
+
+    }
  
 }
 
@@ -362,6 +466,39 @@ function saveReschedule() {
     })
     .catch(error => console.error("Error:", error));
 }
+
+
+
+function buatJadwalTandem() {
+    const newDateTandem = document.getElementById('newDateTandem').value;
+    if (!newDateTandem) {
+        alert("Pilih tanggal terlebih dahulu!");
+        return;
+    }
+
+    fetch("{{ route('create-jadwal-tandem') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            id: selectedId,
+            tanggal: newDateTandem
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Jadwal tandem berhasil dibuat.");
+            location.reload();
+        } else {
+            alert("Gagal menyimpan jadwal tandem: " + data.message);
+        }
+    })
+    .catch(error => console.error("Error:", error));
+}
+
 
 </script>
 

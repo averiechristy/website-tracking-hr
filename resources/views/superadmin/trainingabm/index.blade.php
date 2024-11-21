@@ -2,14 +2,14 @@
 @section('content')
 <main id="main" class="main">
 <div class="pagetitle">
-  <h1>Kandidat Blacklist</h1>
+  <h1>Training ABM</h1>
 </div><!-- End Page Title -->
 <section class="section dashboard">
     <div class="row">
       <div class="col-lg-12">
         <div class="card">
           <div class="card-body">
-            <a href="{{route('superadmin.blacklist.create')}}" class="btn btn-sm btn-primary mb-3 mt-3">Tambah Daftar Blacklist</a>
+            <a href="{{route('superadmin.trainingabm.create')}}" class="btn btn-sm btn-primary mb-3 mt-3">Tambah Daftar Training ABM</a>
             @include('components.alert')
             <div class="table-responsive">
             <div class="dataTables_length mb-3" id="myDataTable_length">
@@ -31,27 +31,29 @@
             <table class="table">
               <thead>
                 <tr>
-                 <th>Nama Kandidat</th>
-                 <th>Keterangan</th>
-                 <th>Created By</th>
-                 <th>Action</th>
+                <th>Tanggal</th>
+                <th>Nama Kandidat</th>
+                <th>ABM</th>
+                <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-            @foreach ($blacklist as $item )
-            <tr>
-                <td>{{$item->kandidat->nama_kandidat}}</td>
-                <td>{{$item->keterangan}}</td>
-                <td>{{$item->created_by}}</td>
-                <td><form method="POST" action="{{ route('superadmindeleteblacklist', $item->id) }}" style="display: inline;">
+                @foreach ($trainingabm as $item )
+                
+                <tr>
+                    <td>{{$item->tanggal}}</td>
+                  
+                    <td>{{$item -> kandidat -> nama_kandidat}}</td>
+                    <td>{{$item->abm->nama_ABM}}</td>
+                    <td><form method="POST" action="{{ route('superadmindeletetrainingabm', $item->id) }}" style="display: inline;">
         @csrf
         @method('DELETE')
         <button type="submit" class="btn btn-sm btn-danger show_confirm" data-toggle="tooltip" title="Hapus">
             <i class="bi bi-trash" style="color:white;"></i>
         </button>
     </form></td>
-            </tr>
-            @endforeach
+                </tr>
+                @endforeach
               
               </tbody>
             </table>

@@ -4,17 +4,17 @@
 <div class="pagetitle">
   <h1>Tidak Lolos</h1>
 </div>
-@include('components.alert')          
+@include('components.alert')    
 
 
-</div>
-<!-- End Page Title -->
+<button id="processButton" type="button" class="btn btn-warning mb-3" onclick="processStatus()">Buat Penjadwalan</button>
+
 <section class="section dashboard">
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card">
-                <div class="card-body">
-                    <!-- Filter by No Hp Status -->
+<div class="row">
+<div class="col-lg-12">
+    <div class="card">
+        <div class="card-body">
+                  
 <form method="GET" action="{{ route('superadmin.tidaklolos.index') }}" class="mb-3 mt-4">
     <div class="row">
     <div class="col-md-4">
@@ -65,35 +65,35 @@
                                     </th>                              
                                     <th scope="col">Nama Kandidat</th>
                                     <th scope="col">Posisi</th>
-                                    <th scope="col">Wilayah</th>
-                                   
+                                    <th scope="col">Wilayah</th> 
+                                    <!-- <th>Action</th> -->
                                 </tr>
                             </thead>
                         <tbody>
-@foreach ($kandidat as $item)
-    <tr>
-        <td>
-            <input type="checkbox" class="rowCheckbox" name="checked_ids[]" value="{{ $item->id }}">
-        </td>
-        <td>
-            <span data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $item->nama_kandidat }}">
-                {{ \Illuminate\Support\Str::limit($item->nama_kandidat, 15, '...') }}
-            </span>
-        </td>
-        <td>{{ $item->posisi->nama_posisi }}</td>
-        <td>{{ $item->wilayah->nama_wilayah }}</td>  
-        <!-- <td>
-        <a href="#" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Mundurkan Status" onclick="showMundurkanModal('{{ $item->id }}')">
-             <i class="bi bi-pencil"></i>
-        </a>
-        </td> -->
-    </tr>
-@endforeach
+                @foreach ($kandidat as $item)
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="rowCheckbox" name="checked_ids[]" value="{{ $item->id }}">
+                        </td>
+                        <td>
+                            <span data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $item->nama_kandidat }}">
+                                {{ \Illuminate\Support\Str::limit($item->nama_kandidat, 15, '...') }}
+                            </span>
+                        </td>
+                        <td>{{ $item->posisi->nama_posisi }}</td>
+                        <td>{{ $item->wilayah->nama_wilayah }}</td>  
+                        <!-- <td>
+                        <a  href="{{ route('showjadwal', $item->id) }}" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Lihat & Edit Jadwal">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                        </td> -->
+                    </tr>
+                @endforeach
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="dataTables_info" id="dataTableInfo" role="status" aria-live="polite">
+                            <div class="dataTables_info" id="dataTableInfo" role="status" aria-live="polite">
                                 Showing <span id="showingStart">1</span> to <span id="showingEnd">10</span> of <span id="totalEntries">0</span> entries
                             </div>
 
@@ -106,61 +106,41 @@
                                 <a href="#" class="paginate_button" id="nextButton" onclick="nextPage()"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
                                 <a href="#" class="paginate_button" id="doubleNextButton" onclick="doubleNextPage()"><i class="bi bi-chevron-double-right" aria-hidden="true"></i></a>
                             </div>
+
                 </div>
             </div>
         </div>
     </div>
 </section>
 </main><!-- End #main -->
-<div class="modal fade" id="mundurkanStatusModal" tabindex="-1" aria-labelledby="mundurkanStatusModalLabel" aria-hidden="true">
+
+
+
+
+
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="mundurkanStatusModalLabel">Mundurkan Status</h5>
+        <h5 class="modal-title" id="confirmationModalLabel">Konfirmasi Proses</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="mundurkanStatusForm" method="POST" action="{{ route('superadmin.tidaklolos.mundurkanStatus') }}">
-          @csrf
-          <input type="hidden" name="kandidat_id" id="kandidat_id_mundur">
-          <div class="mb-3">
-            <label for="statusMundur" class="form-label">Pilih Status</label>
-            <select name="status" id="statusMundur" class="form-select" required>
-              <option value="">-- Pilih Status --</option>
-              <option value="Psikotes">Psikotes</option>
-              <option value="Interview HR">Interview HR</option>
-              <option value="Interview User">Interview User</option>
-              <option value="Training">Training</option>
-              <option value="Tandem">Tandem</option>
-            </select>
-          </div>
-          <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-          <button type="submit" class="btn btn-primary">Proses</button>
-          </div>
-        </form>
+      <p>Apakah anda yakin ingin memproses kandidat berikut dengan status <strong><span id="modalStatus"></span></strong>?</p>
+      
+        <ul id="modalKandidatList"></ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-primary" onclick="submitForm()">Proses</button>
       </div>
     </div>
   </div>
 </div>
 
-
-<script>
-    function showMundurkanModal(kandidatId) {
-    // Set kandidat ID ke input hidden
-    document.getElementById('kandidat_id_mundur').value = kandidatId;
-
-    // Tampilkan modal
-    var mundurkanModal = new bootstrap.Modal(document.getElementById('mundurkanStatusModal'));
-    mundurkanModal.show();
-}
-</script>
 <script>
 
 function processStatus() {
-    // Ambil nilai status
-    var status = document.getElementById('status').value;
-    
     // Ambil semua checkbox yang dicentang
     var checkedIds = [];
     var checkboxes = document.querySelectorAll('.rowCheckbox:checked');
@@ -170,33 +150,29 @@ function processStatus() {
         checkedIds.push(checkbox.value);
     });
 
-    // Cek apakah status sudah dipilih
-    if (status === '') {
-        alert('Status harus diisi.');
-        return; // Hentikan proses jika status belum diisi
-    }
-
     // Cek apakah ada kandidat yang dipilih
     if (checkedIds.length === 0) {
         alert('Kandidat harus dipilih.');
         return; // Hentikan proses jika tidak ada kandidat yang dipilih
     }
 
-    // Isi input hidden dengan nilai ID yang dipilih
-    document.getElementById('checked_ids').value = checkedIds.join(',');
+    // Redirect ke halaman penjadwalan dengan ID kandidat terpilih
+    window.location.href = "{{ route('superadmin.penjadwalantidaklolos') }}?ids=" + checkedIds.join(',');
+}
 
-    console.log("Checked IDs:", checkedIds); // Debug: tampilkan checked IDs di konsol browser
-
-    // Kirimkan form setelah ID kandidat diisi
+function submitForm() {
     document.getElementById('processForm').submit();
 }
 
 
-   document.getElementById('checkAll').addEventListener('click', function() {
+  
+  
+// Event listener untuk checkbox "Select All"
+document.getElementById('checkAll').addEventListener('click', function() {
     var checkboxes = document.querySelectorAll('.rowCheckbox');
     var isChecked = this.checked;
     
-    // Only check/uncheck the visible rows
+    // Hanya check/uncheck baris yang terlihat
     var tableRows = document.querySelectorAll("table tbody tr");
     tableRows.forEach(function(row) {
         if (row.style.display !== 'none') {
@@ -205,6 +181,25 @@ function processStatus() {
         }
     });
 });
+
+// Event listener untuk setiap checkbox individual
+document.querySelectorAll('.rowCheckbox').forEach(function(checkbox) {
+    checkbox.addEventListener('click', function() {
+        var checkboxes = document.querySelectorAll('.rowCheckbox');
+        var allChecked = true;
+
+        // Cek status semua checkbox individual
+        checkboxes.forEach(function(cb) {
+            if (!cb.checked) {
+                allChecked = false;
+            }
+        });
+
+        // Set status "Select All" checkbox berdasarkan hasil pengecekan
+        document.getElementById('checkAll').checked = allChecked;
+    });
+});
+
 
 
    

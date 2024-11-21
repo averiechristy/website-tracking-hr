@@ -12,6 +12,27 @@
 :root {
   scroll-behavior: smooth;
 }
+.button-section {
+  display: flex;
+  gap: 10px; /* Memberikan jarak antar tombol */
+  margin-top: -3px;
+}
+
+.button-section .btn {
+  transition: all 0.3s ease;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.button-section .btn:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.button-section .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .no-hover:focus {
   outline: none !important; /* Hilangkan outline */
@@ -835,6 +856,8 @@ h6 {
   margin: 10px 0 5px 15px;
 }
 
+
+
 .sidebar-nav .nav-link {
   display: flex;
   align-items: center;
@@ -851,6 +874,78 @@ h6 {
   font-size: 16px;
   margin-right: 10px;
   color: #4154f1;
+}
+button.btn-danger.disabled, 
+button.btn-danger:disabled {
+    background-color: #6c757d; /* warna abu-abu */
+    cursor: not-allowed;
+    border-color: #6c757d; /* mengatur warna border */
+    color: #fff; /* tetap putih agar icon terlihat */
+}
+
+
+button.btn-success.disabled, 
+button.btn-success:disabled {
+    background-color: #6c757d; /* warna abu-abu */
+    cursor: not-allowed;
+    border-color: #6c757d; /* mengatur warna border */
+    color: #fff; /* tetap putih agar icon terlihat */
+}
+
+button.btn-info.disabled, 
+button.btn-info:disabled {
+    background-color: #6c757d; /* warna abu-abu */
+    cursor: not-allowed;
+    border-color: #6c757d; /* mengatur warna border */
+    color: #fff; /* tetap putih agar icon terlihat */
+}
+
+
+a.btn-warning.disabled, 
+a.btn-warning[aria-disabled="true"] {
+    background-color: #6c757d; /* warna abu-abu */
+    cursor: not-allowed;
+    border-color: #6c757d;
+    color: #fff; /* menjaga warna ikon tetap terlihat */
+    pointer-events: none; /* agar benar-benar tidak bisa diklik */
+}
+/* Styling for action buttons container */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem; /* Jarak antar tombol */
+    align-items: center; /* Membuat tombol sejajar secara vertikal */
+}
+
+/* Styling untuk tombol disabled agar terlihat abu-abu */
+a.btn-warning.disabled,
+a.btn-warning[aria-disabled="true"],
+button.btn-danger.disabled,
+button.btn-danger:disabled {
+    background-color: #6c757d; /* Warna abu-abu untuk disabled */
+    border-color: #6c757d;
+    color: #fff;
+    cursor: not-allowed;
+    pointer-events: none; /* Menonaktifkan klik */
+}
+
+/* Additional padding and size adjustments for buttons */
+.btn-sm i {
+    font-size: 1.2rem; /* Ukuran ikon */
+}
+
+
+/* Style untuk menu navigasi */
+.nav-link.active {
+  background-color: #4154f1; /* Ganti dengan warna latar belakang aktif */
+  color: white; /* Ganti warna teks untuk menu yang aktif */
+  border-radius: 5px; /* Opsional: menambahkan sudut yang melengkung */
+  font-weight: bold; /* Opsional: menambah ketebalan teks */
+}
+
+/* Menambahkan efek hover untuk menu yang aktif */
+.nav-link.active:hover {
+  background-color: #0056b3; /* Ganti dengan warna latar belakang saat hover pada menu aktif */
+  color: white; /* Warna teks tetap putih saat hover */
 }
 
 .sidebar-nav .nav-link.collapsed {
@@ -1064,6 +1159,17 @@ h6 {
 }
 
 
+/* Styling untuk tombol disabled agar terlihat abu-abu */
+button.btn-warning.disabled, 
+button.btn-warning:disabled,
+button.btn-primary.disabled, 
+button.btn-primary:disabled {
+    background-color: #6c757d; /* Warna abu-abu */
+    border-color: #6c757d;
+    color: #fff; /* Agar teks tetap terlihat */
+    cursor: not-allowed;
+    pointer-events: none; /* Menonaktifkan klik */
+}
 
 /* Activity */
 .dashboard .activity {

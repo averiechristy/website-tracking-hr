@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Posisi;
 use App\Models\TargetJumlah;
 use Carbon\Carbon;
+use DateTime;
+use Exception;
 use Illuminate\Http\Request;
 
 class TargetJumlahController extends Controller
@@ -34,7 +36,20 @@ class TargetJumlahController extends Controller
      }
 
      public function superadminstore(Request $request){
-        $monthYear = $request->input('month'); 
+
+      
+        $monthYear = $request->input('month'); // "January 2024"
+
+        // Mengonversi nama bulan menjadi angka dan memisahkan tahun
+        $date = DateTime::createFromFormat('F Y', $monthYear);
+        
+        if ($date) {
+            $month = $date->format('m'); // Menghasilkan angka bulan (01-12)
+            $year = $date->format('Y'); // Menghasilkan tahun
+        } else {
+            // Tangani kesalahan jika format tidak valid
+            throw new Exception("Invalid date format. Expected format: 'F Y'");
+        }
         
         $posisiid = $request->posisi_id;
         
@@ -44,7 +59,6 @@ class TargetJumlahController extends Controller
 
         $targetjoin = $request->target_join;
 
-        list($year, $month) = explode('-', $monthYear);
 
         $month = ltrim($month, '0');
 
@@ -82,10 +96,14 @@ class TargetJumlahController extends Controller
         $data = TargetJumlah::find($id);
         $posisi = Posisi::all();
 
-$bulan = str_pad($data->bulan, 2, '0', STR_PAD_LEFT); // Mengubah bulan jadi dua digit
-$tahun = $data->tahun;
-$monthValue = $tahun . '-' . $bulan;
-
+        $bulan = str_pad($data->bulan, 2, '0', STR_PAD_LEFT); // Mengubah bulan jadi dua digit
+        $tahun = $data->tahun;
+        
+        // Membuat objek DateTime dari tahun dan bulan
+        $date = DateTime::createFromFormat('Y-m', $tahun . '-' . $bulan);
+        
+        // Mengubah menjadi format teks "January 2024", "February 2024", dll.
+        $monthValue = $date->format('F Y');
         return view('superadmin.targetjumlah.edit',[
             'data'=>$data,
             'posisi' => $posisi,
@@ -97,10 +115,22 @@ $monthValue = $tahun . '-' . $bulan;
 
      public function superadminupdate (Request $request, $id){
 
+      
+
         $data = TargetJumlah::find($id);
 
-        $monthYear = $request->input('month'); 
-        list($year, $month) = explode('-', $monthYear);
+        $monthYear = $request->input('month'); // "January 2024"
+
+        // Mengonversi nama bulan menjadi angka dan memisahkan tahun
+        $date = DateTime::createFromFormat('F Y', $monthYear);
+        
+        if ($date) {
+            $month = $date->format('m'); // Menghasilkan angka bulan (01-12)
+            $year = $date->format('Y'); // Menghasilkan tahun
+        } else {
+            // Tangani kesalahan jika format tidak valid
+            throw new Exception("Invalid date format. Expected format: 'F Y'");
+        }
         $month = ltrim($month, '0');
         $monthName = Carbon::createFromDate($year, $month, 1)->format('F');
 

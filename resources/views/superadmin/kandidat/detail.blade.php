@@ -1,6 +1,8 @@
 @extends('layouts.superadmin.app')
 @section('content')
 <main id="main" class="main">
+
+
 <section class="section dashboard">
 <div class="card ">
                   <div class="card-body py-3">
@@ -16,6 +18,7 @@
                         <th>Tahapan</th>
                         <th>Hasil</th>
                         <th>Tanggal</th>
+
                         </tr>
                         </thead>
                         <tbody>

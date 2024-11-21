@@ -57,7 +57,7 @@ class LaporanPerformaceController extends Controller
      
                  // Set persenmpp menjadi 0 jika bulan adalah 'all'
                  if ($bulan === 'all') {
-                     $persenmpp = 0;
+                    $persenmpp = $targetMPP > 0 ? round(($mitraexisting / $targetMPP) * 100) : 0;
                  } else {
                      $persenmpp = $targetMPP > 0 ? round(($mitraexisting / $targetMPP) * 100) : 0;
                  }
@@ -90,12 +90,17 @@ class LaporanPerformaceController extends Controller
                 $training = LogTahapan::where('posisi_id', $posisi_id)
                 ->whereIn('bulan', $monthRange)
                 ->where('tahun', $tahun)
-                ->where('status_tahapan', 'Training')
                 ->where(function($query) {
-                    $query->where('hasil_status', 'Lolos')
-                          ->orWhere('hasil_status', 'Tidak Lolos');
+                    $query->where('status_tahapan', 'Training')
+                          ->where(function($subQuery) {
+                              $subQuery->where('hasil_status', 'Lolos')
+                                       ->orWhere('hasil_status', 'Tidak Lolos')
+                                       ->orWhere('hasil_status', 'Simpan Kandidat');
+                          })
+                          ->orWhere('status_tahapan', 'Training ABM');
                 })
                 ->count() ?? 0;
+
 
                 Log::info('Training : ' . $training);
 
@@ -106,7 +111,8 @@ class LaporanPerformaceController extends Controller
                 ->where('status_tahapan', 'Tandem')
                 ->where(function($query) {
                     $query->where('hasil_status', 'Lolos')
-                          ->orWhere('hasil_status', 'Tidak Lolos');
+                          ->orWhere('hasil_status', 'Tidak Lolos')
+                          ->orWhere('hasil_status', 'Simpan Kandidat');
                 })
                 ->count() ?? 0;
 
@@ -148,13 +154,12 @@ class LaporanPerformaceController extends Controller
                      ->sum('target_join') ?? 0;
      
 
-                    if ($bulan === 'all') {
-                        $persenpencapaian = 0;
-                    } else {
+                if ($bulan === 'all') {
                         $persenpencapaian = $targetjoin > 0 ? round(($pkmbaru / $targetjoin) * 100) : 0;
-                    }
-                
-     
+                } else {
+                        $persenpencapaian = $targetjoin > 0 ? round(($pkmbaru / $targetjoin) * 100) : 0;
+                }
+                     
                  // Ambil data untuk setiap bulan
                  $lolossortirBulan = [];
                  $konfirmasihadirBulan = [];
@@ -175,29 +180,34 @@ class LaporanPerformaceController extends Controller
                          ->sum('jumlah_konfirm_manual') ?? 0;
      
                      $lolosBulan['lolos_bulan_' . $i] = LogTahapan::where('posisi_id', $posisi_id)
-                     ->whereIn('bulan', $monthRange)
+                     ->where('bulan', $i)
                      ->where('tahun', $tahun)
                      ->where('status_tahapan', 'Interview HR')
                      ->where('hasil_status', 'Lolos')
                      ->count() ?? 0;
      
                      $trainingBulan['training_bulan_' . $i] = LogTahapan::where('posisi_id', $posisi_id)
-                     ->whereIn('bulan', $monthRange)
+                     ->where('bulan', $i)
                      ->where('tahun', $tahun)
-                     ->where('status_tahapan', 'Training')
                      ->where(function($query) {
-                         $query->where('hasil_status', 'Lolos')
-                               ->orWhere('hasil_status', 'Tidak Lolos');
+                         $query->where('status_tahapan', 'Training')
+                               ->where(function($subQuery) {
+                                   $subQuery->where('hasil_status', 'Lolos')
+                                            ->orWhere('hasil_status', 'Tidak Lolos')
+                                            ->orWhere('hasil_status', 'Simpan Kandidat');
+                               })
+                               ->orWhere('status_tahapan', 'Training ABM');
                      })
                      ->count() ?? 0;
      
                      $tandemBulan['tandem_bulan_' . $i] = LogTahapan::where('posisi_id', $posisi_id)
-                     ->whereIn('bulan', $monthRange)
+                     ->where('bulan', $i)
                      ->where('tahun', $tahun)
                      ->where('status_tahapan', 'Tandem')
                      ->where(function($query) {
                          $query->where('hasil_status', 'Lolos')
-                               ->orWhere('hasil_status', 'Tidak Lolos');
+                               ->orWhere('hasil_status', 'Tidak Lolos')
+                               ->orWhere('hasil_status', 'Simpan Kandidat');
                      })
                      ->count() ?? 0;
      

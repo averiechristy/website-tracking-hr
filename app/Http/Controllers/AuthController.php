@@ -53,7 +53,7 @@ class AuthController extends Controller
                     'role_id' =>  Auth::user()->role_id,
                 ]);
 
-                return redirect()->route('rekrutmendashboard'); // Adjust the route accordingly
+                return redirect()->route('superadmindashboard'); // Adjust the route accordingly
             }
            
             elseif ($user->isTrainer()) {
